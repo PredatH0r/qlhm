@@ -56,3 +56,9 @@ compatible yet.
 2. `cd server`
 3. `npm install -d`
 4. `node app`
+
+
+## Userscript Developers
+
+You'll either need to add a full URL to your work-in-progress script to the `config.manual` array
+(within "hook.js") or come up with a creative alternative.
