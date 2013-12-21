@@ -48,7 +48,7 @@ compatible yet.
 ### Client
 
 1. [Locate your Quake Live config directory](http://lmgtfy.com/?q=quake+live+config+location)
-2. Save `hook.js` there
+2. Save [`hook.js`](https://raw.github.com/supahgreg/qlhm/master/client/hook.js) there
 
 ### Server
 
