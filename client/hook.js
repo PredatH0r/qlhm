@@ -356,7 +356,6 @@ HookManager.prototype.loadScripts = function() {
     console.log("^7Attempting fresh retrieval of script with URL '^5" + scriptURL + "^7'");
     $.ajax({
       url: scriptURL
-    , headers: {"Accept-Version": "~1"}
     , dataType: "jsonp"
     }).done(function(aData) {
       injectScript(";(function() {" + self.getUserScriptGM(-1) + ";" + aData + "})();");
@@ -371,6 +370,7 @@ HookManager.prototype.fetchScript = function(aScriptID, aCB) {
 
   $.ajax({
       url: JSONP_PROXY_TEMPLATE.replace("{{id}}", aScriptID)
+    , headers: {"Accept-Version": "~1"}
     , dataType: "jsonp"
   })
   .done(function(aData) {
