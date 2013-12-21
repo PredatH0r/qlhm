@@ -65,3 +65,5 @@ to modify `config.BASE_URL` in "hook.js".
 
 You'll either need to add a full URL to your work-in-progress script to the `config.manual` array
 (within "hook.js") or come up with a creative alternative.
+
+If you'd like, list your QUAKE LIVE script [on the wiki](https://github.com/supahgreg/qlhm/wiki).
