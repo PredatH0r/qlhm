@@ -42,6 +42,9 @@ and [Quake Live New Alt Browser](https://userscripts.org/scripts/show/73076) (73
 enter "111519,114449,73076" and click "Save".  Note that "Quake Live New Alt Browser" has not been made
 compatible yet.
 
+**NOTE:** The server-side app is running on wn's server.  If you'd prefer to run your own, feel free
+to modify `config.BASE_URL` in "hook.js".
+
 
 ## Installation
 
