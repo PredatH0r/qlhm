@@ -1,0 +1,16 @@
+{
+  "name": "qlhm",
+  "version": "0.0.1",
+  "description": "Quake Live Hook Manager Server",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "wn",
+  "license": "",
+  "dependencies": {
+    "request": "~2.27.0",
+    "restify": "~2.6.0",
+    "moment": "~2.4.0",
+  }
+}
