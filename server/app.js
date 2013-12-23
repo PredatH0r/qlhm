@@ -22,7 +22,7 @@ var SCRIPT_CACHE = {};
 
 
 // The latest "hook.js" version
-var LATEST_CLIENT_VERSION = 0.1
+var LATEST_CLIENT_VERSION = 0.2
   , LATEST_CLIENT_DOWNLOAD_URL = "https://github.com/supahgreg/qlhm"
   ;
 
@@ -125,6 +125,13 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
     return res.send(404, {error: err404});
   }
 });
+
+// Serve userscript repository file
+server.get("/repo", restify.serveStatic({
+    directory: "./public"
+  , default: "qlhmUserscriptRepository.js"
+  , maxAge: 300
+}));
 
 // Serve up a homepage
 server.get("/", restify.serveStatic({
