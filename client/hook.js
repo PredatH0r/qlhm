@@ -173,11 +173,12 @@ HudManager.prototype.scriptRowFromScript = function(aScript) {
 
 HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
   var id = aScriptInfo.id;
+  var note = "note" in aScriptInfo ? " - <b>NOTE:</b> " + aScriptInfo.note : "";
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-add'>"
        + " <label for='userscript" + id + "'>" 
        + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a>" 
-       + " <small>(ID: " + id + ")</small></label></li>";
+       + " <small>(ID: " + id + ")</small></label>" + note + "</li>";
 }
 
 HudManager.prototype.showConsole = function() {
