@@ -11,6 +11,6 @@
   "dependencies": {
     "request": "~2.27.0",
     "restify": "~2.6.0",
-    "moment": "~2.4.0",
+    "moment": "~2.4.0"
   }
 }
