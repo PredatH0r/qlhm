@@ -33,8 +33,8 @@ var JSONP_PROXY_TEMPLATE = config.BASE_URL + "uso/{{id}}";
 // This is used to determine whether `hook.js` and the proxy service are on the same version.
 var VERSION_CHECK_URL = config.BASE_URL + "versioncheck";
 
-// TODO: once committed into trunk, replace this with: config.BASE_URL + "/repo"
-var USERSCRIPT_REPOSITORY_URL = "http://beham.biz/ql/qlhmUserscriptRepository.js";
+// List of userscripts shown in the HOOK console
+var USERSCRIPT_REPOSITORY_URL = config.BASE_URL + "qlhmUserscriptRepository.js";
 
 // This is used to indicate if /web_reload is required (e.g. scripts were enabled or disabled)
 var webReloadRequired = false;
