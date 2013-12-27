@@ -6,7 +6,7 @@
 * A client-side `hook.js` file used to allow many [userscripts](http://userscripts.org) to run in the standalone [QUAKE LIVE](http://www.quakelive.com) client
 * A server-side [node.js](http://nodejs.org) application which provides a JSONP interface to manage (i.e. retrieve, cache, check for updates) scripts from [userscripts.org](http://userscripts.org)
 
-**NOTE:** The vast majority of users will only need the `hook.js` script.  Refer to the "Installation" section.
+**NOTE:** The vast majority of users will only need the `hook.js` script.  Refer to the [Installation](#installation) section.
 
 
 ## What QLHM is not
@@ -30,7 +30,7 @@ issues and breaking changes.
 
 ## How to use
 
-1. Follow the "client" installation instructions below
+1. Follow the [client installation instructions](#installation) below
 2. Open the QUAKE LIVE standalone client
 3. Click on the QLHM "HOOK" menu (to the lower-left of the QUAKE LIVE logo)
 4. Under the "New" section enter the [userscripts.org](http://userscripts.org) script ID (the number in the URL)
@@ -50,8 +50,11 @@ to modify `config.BASE_URL` in "hook.js".
 
 ### Client
 
-1. [Locate your Quake Live config directory](http://lmgtfy.com/?q=quake+live+config+location)
-2. Save [`hook.js`](https://raw.github.com/supahgreg/qlhm/master/client/hook.js) there
+1. [Locate your Quake Live config directory](http://lmgtfy.com/?q=quake+live+config+location).
+2. In your browser, navigate to the [Version History](https://github.com/supahgreg/qlhm/wiki/Version-History) wiki page.
+3. Click the "[Download `hook.js`](about:blank)" for the latest release listed.
+4. Save the displayed `hook.js` in your Quake Live config directory.
+  * **NOTE:** Be certain "Save as type" is set to "All Files" (or similar) in the download prompt.
 
 ### Server
 
@@ -67,3 +70,8 @@ You'll either need to add a full URL to your work-in-progress script to the `con
 (within "hook.js") or come up with a creative alternative.
 
 If you'd like, list your QUAKE LIVE script [on the wiki](https://github.com/supahgreg/qlhm/wiki).
+
+
+## Changelog / Version History
+
+Refer to the [Version History](https://github.com/supahgreg/qlhm/wiki/Version-History) wiki page.
