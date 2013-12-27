@@ -202,6 +202,7 @@ HudManager.prototype.showConsole = function() {
       a = a.name.toLowerCase(), b = b.name.toLowerCase();
       return (a < b ? -1 : a > b ? 1 : 0);
     });
+    self.addRepositoryScripts();
   });
 
   // Generate the console
