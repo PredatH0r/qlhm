@@ -126,15 +126,9 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
   }
 });
 
-// Serve userscript repository file
-server.get("/repo", restify.serveStatic({
-    directory: "./public"
-  , default: "qlhmUserscriptRepository.js"
-  , maxAge: 300
-}));
-
-// Serve up a homepage
-server.get("/", restify.serveStatic({
+// Static content
+// TODO: this regexp is unbelievably bad... replace it
+server.get(/^\/((?!(?:uso|versioncheck)).)*$/, restify.serveStatic({
     directory: "./public"
   , default: "index.html"
   , maxAge: 300
