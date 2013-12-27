@@ -184,6 +184,8 @@ HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
 HudManager.prototype.showConsole = function() {
   var self = this;
 
+  webReloadRequired = false;
+
   // Get and sort all scripts
   var scripts = [];
   for (var i = 0, e = storage.scripts.available.length; i < e; ++i) {
@@ -192,6 +194,14 @@ HudManager.prototype.showConsole = function() {
   scripts.sort(function(a, b) {
     a = a.headers.name[0].toLowerCase(), b = b.headers.name[0].toLowerCase();
     return (a < b ? -1 : a > b ? 1 : 0);
+  });
+
+  // Get and sort scripts from repository file
+  $.getScript(USERSCRIPT_REPOSITORY_URL, function() {
+    HOOK_MANAGER.userscriptRepository.sort(function(a, b) {
+      a = a.name.toLowerCase(), b = b.name.toLowerCase();
+      return (a < b ? -1 : a > b ? 1 : 0);
+    });
   });
 
   // Generate the console
@@ -207,11 +217,10 @@ HudManager.prototype.showConsole = function() {
   out.push("<fieldset><legend>Add Scripts</legend>");
   out.push("<input type='text' class='userscript-new' placeholder='Enter userscripts.org script IDs directly -or- select from below'>");  
   out.push("<ul id='userscriptsRepository'>");
-  // will be populated by addKnownScripts
+  // will be populated by addRepositoryScripts
   out.push("</ul>");  
   out.push("</fieldset>");
   out.push("</div>");
-
 
   // Inject the console
   qlPrompt({
@@ -257,17 +266,14 @@ HudManager.prototype.showConsole = function() {
 
 HudManager.prototype.addRepositoryScripts = function() {
   var self = this;
-
-  webReloadRequired = false;
+  
   var $repo = $("#userscriptsRepository");
   $repo.empty();
-  $.getScript(USERSCRIPT_REPOSITORY_URL, function () {  
-    $.each(HOOK_MANAGER.userscriptRepository, function(i, scriptInfo) {
-      if (storage.scripts.available.indexOf(scriptInfo.id) === -1) {
-        $repo.append(self.scriptRowFromScriptRepository(scriptInfo));
-      }
-    });    
-  });  
+  $.each(HOOK_MANAGER.userscriptRepository, function(i, scriptInfo) {
+    if (storage.scripts.available.indexOf(scriptInfo.id) === -1) {
+      $repo.append(self.scriptRowFromScriptRepository(scriptInfo));
+    }
+  });    
 }
 
 HudManager.prototype.handleConsoleOk = function() {
