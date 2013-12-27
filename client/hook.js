@@ -392,7 +392,7 @@ HookManager.prototype.versionCheck = function() {
     if (data.new) {
       console.log("New version found: " + data.new.version);
       var out = "A new version (" + data.new.version + ") of " + self.name + " is available @ <a href='"
-              + data.new.url + "'>" + data.new.url + "</a>.<br><br>You will need to manually update your "
+              + data.new.url + "' target='_blank'>" + data.new.url + "</a>.<br><br>You will need to manually update your "
               + "\"hook.js\" file, which is currently at version " + self.version + ".";
       self.hud.alert({
           title: self.name + " Update Available"
