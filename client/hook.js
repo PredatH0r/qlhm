@@ -1,6 +1,6 @@
 /**
  * QUAKE LIVE HOOK MANAGER
- * Version: 0.1
+ * Version: 0.2
  */
 
 // called in ql.Init
@@ -33,6 +33,11 @@ var JSONP_PROXY_TEMPLATE = config.BASE_URL + "uso/{{id}}";
 // This is used to determine whether `hook.js` and the proxy service are on the same version.
 var VERSION_CHECK_URL = config.BASE_URL + "versioncheck";
 
+// TODO: once committed into trunk, replace this with: config.BASE_URL + "/repo"
+var USERSCRIPT_REPOSITORY_URL = "http://beham.biz/ql/qlhmUserscriptRepository.js";
+
+// This is used to indicate if /web_reload is required (e.g. scripts were enabled or disabled)
+var webReloadRequired = false;
 
 // Local reference to jQuery (set during initialization)
 var $;
@@ -148,7 +153,7 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console strong, #qlhm_console legend { font-weight: bold; }"
     , "#qlhm_console fieldset { margin: 10px 0 20px 0; padding: 5px; }"
     , "#qlhm_console ul { list-style: none; }"
-    , "#qlhm_console input.userscript-new { width: 500px }"
+    , "#qlhm_console input.userscript-new { width: 500px; margin-bottom: 5px; }"
     , "#qlhm_console a.del { text-decoration: none; }"
     , "#qlhm_console .strike { text-decoration: line-through; }"
   ]);
@@ -161,12 +166,25 @@ HudManager.prototype.scriptRowFromScript = function(aScript) {
   var enabled = -1 !== storage.scripts.enabled.indexOf(id);
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
-       + " <label for='userscript" + id + "'>" + aScript.headers.name[0] + " <small>(ID: " + id
-       + ")</small></label> &hellip; <a href='javascript:void(0)' class='del'>[DELETE]</a></li>";
+       + " <label for='userscript" + id + "'>" 
+       + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScript.headers.name[0] + "</a>" 
+       + " <small>(ID: " + id + ")</small></label> &hellip; <a href='javascript:void(0)' class='del'>[DELETE]</a></li>";
+}
+
+HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
+  var id = aScriptInfo.id;
+  var note = "note" in aScriptInfo ? " - <b>NOTE:</b> " + aScriptInfo.note : "";
+  return "<li id='userscript" + id + "' data-id='" + id + "'>"
+       + "<input type='checkbox' class='userscript-add'>"
+       + " <label for='userscript" + id + "'>" 
+       + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a>" 
+       + " <small>(ID: " + id + ")</small></label>" + note + "</li>";
 }
 
 HudManager.prototype.showConsole = function() {
   var self = this;
+
+  webReloadRequired = false;
 
   // Get and sort all scripts
   var scripts = [];
@@ -178,18 +196,29 @@ HudManager.prototype.showConsole = function() {
     return (a < b ? -1 : a > b ? 1 : 0);
   });
 
+  // Get and sort scripts from repository file
+  $.getScript(USERSCRIPT_REPOSITORY_URL, function() {
+    HOOK_MANAGER.userscriptRepository.sort(function(a, b) {
+      a = a.name.toLowerCase(), b = b.name.toLowerCase();
+      return (a < b ? -1 : a > b ? 1 : 0);
+    });
+  });
+
   // Generate the console
   var out = [];
   out.push("<div id='qlhm_console'>");
-  out.push("<fieldset><legend>New <em>(<code>/web_reload</code> after adding)</legend>");
-  out.push("<input type='text' class='userscript-new' placeholder='Enter a userscripts.org script ID (e.g. 111519)'>");
-  out.push("</fieldset>");
   out.push("<fieldset><legend>Installed Scripts</legend>");
   out.push("<ul id='userscripts'>");
   $.each(scripts, function(i, script) {
     out.push(self.scriptRowFromScript(script));
   });
   out.push("</ul>");
+  out.push("</fieldset>");  
+  out.push("<fieldset><legend>Add Scripts</legend>");
+  out.push("<input type='text' class='userscript-new' placeholder='Enter userscripts.org script IDs directly -or- select from below'>");  
+  out.push("<ul id='userscriptsRepository'>");
+  // will be populated by addRepositoryScripts
+  out.push("</ul>");  
   out.push("</fieldset>");
   out.push("</div>");
 
@@ -198,8 +227,8 @@ HudManager.prototype.showConsole = function() {
       title: self.hm.name + " <small>(v" + self.hm.version + ")</small>"
     , customWidth: self.width
     , ok: self.handleConsoleOk.bind(self)
-    , okLabel: "Save"
-    , cancel: function() { $("#prompt").jqmHide(); }
+    , okLabel: "Apply"
+    , cancel: self.handleConsoleClose.bind(self)
     , cancelLabel: "Close"
     , body: out.join("")
   });
@@ -230,7 +259,21 @@ HudManager.prototype.showConsole = function() {
         console.log("final result will be to delete " + id);
       }
     });
+
+    self.addRepositoryScripts();
   }, 0);
+}
+
+HudManager.prototype.addRepositoryScripts = function() {
+  var self = this;
+  
+  var $repo = $("#userscriptsRepository");
+  $repo.empty();
+  $.each(HOOK_MANAGER.userscriptRepository, function(i, scriptInfo) {
+    if (storage.scripts.available.indexOf(scriptInfo.id) === -1) {
+      $repo.append(self.scriptRowFromScriptRepository(scriptInfo));
+    }
+  });    
 }
 
 HudManager.prototype.handleConsoleOk = function() {
@@ -238,10 +281,21 @@ HudManager.prototype.handleConsoleOk = function() {
     , $con = $("#qlhm_console")
     , $uNew = $con.find("input.userscript-new")
     , ids = $uNew.val()
+    , updateRepository = false
     ;
 
   ids = ids.replace(/https:\/\/userscripts\.org\/scripts\/[a-z]+\//g, "").replace(/[^\d,]/g, "");
   ids = ids.split(",").map(function(id) { return parseInt(id.trim()); });
+  $con.find("input.userscript-add").each(function() {
+    var $input = $(this)
+      , $item = $input.closest("li")
+      , id = parseInt($item.data("id"));
+    if ($input.prop("checked")) {
+      ids.push(id);
+      $item.remove();
+    }
+  });
+
 
   $.each(ids, function(i, id) {
     // New userscript?
@@ -270,23 +324,44 @@ HudManager.prototype.handleConsoleOk = function() {
 
     // Should this userscript be deleted
     if ($item.data("toDelete")) {
+      if (storage.scripts.enabled.indexOf(id) !== -1) {
+        webReloadRequired = true;
+      }
       self.hm.removeUserScript(id);
       $item.remove();
+      updateRepository = true;
     }
     // ... otherwise just check if disabled or enabled
     else {
-      self.hm.toggleUserScript(id, $input.prop("checked"));
+      webReloadRequired |= self.hm.toggleUserScript(id, $input.prop("checked"));
     }
   });
+  
+  if (updateRepository) {
+    self.addRepositoryScripts();
+  }
+
+  if (webReloadRequired) {
+    //$("#modal-buttons").append("<span style='color:#c00000; font-size: 12pt'> ... and reload website</span>");
+    $("#modal-cancel").prop("value", "Restart");
+  }
 }
 
+HudManager.prototype.handleConsoleClose = function() {
+  if (webReloadRequired) {
+    qz_instance.SendGameCommand("web_reload");
+  } 
+  else {
+    $("#prompt").jqmHide();
+  }  
+}
 
 /**
  * Hook Manager
  */
 function HookManager(aProps) {
   readOnly(this, "name", "Quake Live Hook Manager");
-  readOnly(this, "version", 0.1);
+  readOnly(this, "version", 0.2);
   readOnly(this, "debug", !!aProps.debug);
 }
 
@@ -426,13 +501,14 @@ HookManager.prototype.removeUserScript = function(aID) {
 }
 
 HookManager.prototype.toggleUserScript = function(aID, aEnable) {
+  // return true if web_reload is required to make the change take effect
   var enable = true === aEnable ? aEnable : false
     , enIndex = storage.scripts.enabled.indexOf(aID)
     , script = storage.scripts.cache[aID]
     , name
     ;
 
-  if (!script) return;
+  if (!script) return false;
   name = script.headers.name[0];
 
   if (enable && -1 == enIndex) {
@@ -440,12 +516,15 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
     storage.save();
     this.injectUserScript(script);
     console.log("^7'^5" + name + "^7' has been enabled and injected.  You might need to restarted QUAKE LIVE to get the expected behaviour.");
+    return false;
   }
   else if (!enable && -1 != enIndex) {
     storage.scripts.enabled.splice(enIndex, 1);
     storage.save();
     console.log("^7'^5" + name + "^7' has been disabled, but you must restart QUAKE LIVE for the change to take effect.");
+    return true;
   }
+  return false;
 }
 
 HookManager.prototype.injectUserScript = function(aScript) {
