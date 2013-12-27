@@ -5,7 +5,7 @@ var util = require("util")
   , request = require("request")
   , restify = require("restify")
 
-	, Scriptish_parser = require("./lib/scriptish").Scriptish_parser
+  , Scriptish_parser = require("./lib/scriptish").Scriptish_parser
   ;
 
 
@@ -107,8 +107,8 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
           res.send(404, {error: "Invalid request"});
         }
         else {
-					// Clear the cache entry
-					SCRIPT_CACHE[reqID] = {};
+          // Clear the cache entry
+          SCRIPT_CACHE[reqID] = {};
 
           // Good response.  Cache the data and send it along.
           // Wait 30 minutes for the next recache.
