@@ -52,7 +52,7 @@ to modify `config.BASE_URL` in "hook.js".
 
 1. [Locate your Quake Live config directory](http://lmgtfy.com/?q=quake+live+config+location).
 2. In your browser, navigate to the [Version History](https://github.com/supahgreg/qlhm/wiki/Version-History) wiki page.
-3. Click the "[Download `hook.js`](about:blank)" for the latest release listed.
+3. Click the "[Download `hook.js`](about:blank)" link for the latest release listed.
 4. Save the displayed `hook.js` in your Quake Live config directory.
   * **NOTE:** Be certain "Save as type" is set to "All Files" (or similar) in the download prompt.
 
