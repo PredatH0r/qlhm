@@ -11,6 +11,7 @@
   { id: 186820, name: "Quake Live IRC Client" },
   { id: 186527, name: "Quake Live Left-Hand-Side Player List Popup" },
   { id: 134614, name: "Quake Live Message Beep" },
+  { id: 186881, name: "Quake Live Navigation" },
   { id:  73076, name: "Quake Live New Alt Browser" },
   { id: 186669, name: "Quake Live Overlapping Menu Fix" },
   { id: 171037, name: "Quake Live Ping", note: "Requires installation of <a href='http://d.pr/f/uDjB+'>qlPing-Setup.exe</a>" },
