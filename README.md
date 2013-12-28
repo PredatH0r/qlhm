@@ -1,6 +1,9 @@
 # Quake Live Hook Manager (QLHM)
 
 
+**IMPORTANT:** To download `hook.js`, see the [Version History](https://github.com/supahgreg/qlhm/wiki/Version-History) wiki page.
+
+
 ## What QLHM is
 
 * A client-side `hook.js` file used to allow many [userscripts](http://userscripts.org) to run in the standalone [QUAKE LIVE](http://www.quakelive.com) client
