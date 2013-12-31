@@ -154,8 +154,9 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console fieldset { margin: 10px 0 20px 0; padding: 5px; }"
     , "#qlhm_console ul { list-style: none; }"
     , "#qlhm_console input.userscript-new { width: 500px; margin-bottom: 5px; }"
-    , "#qlhm_console a.del { text-decoration: none; }"
+    , "#qlhm_console a.del, #qlhm_console a.viewSource { text-decoration: none; }"
     , "#qlhm_console .strike { text-decoration: line-through; }"
+    , "#qlhmSource textarea.userscript-source { width: " + (self.width - 140) + "px; }"
   ]);
 
   $("#qlv_mainLogo").append($("<a id='hooka'>HOOK</a>").click(function() { self.showConsole.call(self); return false; }));
@@ -168,7 +169,8 @@ HudManager.prototype.scriptRowFromScript = function(aScript) {
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
        + " <label for='userscript" + id + "'>" 
        + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScript.headers.name[0] + "</a>" 
-       + " <small>(ID: " + id + ")</small></label> &hellip; <a href='javascript:void(0)' class='del'>[DELETE]</a></li>";
+       + " <small>(ID: " + id + ")</small></label> &hellip; <a href='javascript:void(0)' class='del'>[DELETE]</a> &hellip;"
+       + " <a href='javascript:void(0)' class='viewSource'>[SOURCE]</a></li></li>";
 }
 
 HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
@@ -225,7 +227,8 @@ HudManager.prototype.showConsole = function() {
 
   // Inject the console
   qlPrompt({
-      title: self.hm.name + " <small>(v" + self.hm.version + ")</small>"
+      id: "qlhmPrompt"
+    , title: self.hm.name + " <small>(v" + self.hm.version + ")</small>"
     , customWidth: self.width
     , ok: self.handleConsoleOk.bind(self)
     , okLabel: "Apply"
@@ -242,6 +245,10 @@ HudManager.prototype.showConsole = function() {
     // Suppress backtick (99.999% intended for the QL console)
     .on("keydown", function(ev) {
       if (192 == ev.keyCode) ev.preventDefault();
+    })
+    // Open a prompt to show the selected userscript's source
+    .on("click", "#userscripts a.viewSource", function() {
+      self.showSource($(this).closest("li").data("id"));
     })
     // Toggle a userscript being marked as deleted
     .on("click", "#userscripts a.del", function() {
@@ -262,6 +269,21 @@ HudManager.prototype.showConsole = function() {
     });
 
     self.addRepositoryScripts();
+  }, 0);
+}
+
+HudManager.prototype.showSource = function(aScriptID) {
+  var self = this;
+  qlPrompt({
+      id: "qlhmSource"
+    , alert: true
+    , customWidth: self.width - 100
+    , body: "<p><b>NOTE:</b> Currently read-only</p>"
+          + "<textarea class='userscript-source' rows='8'>" + self.hm.getUserScriptSource(aScriptID) + "</textarea>"
+  });
+  // Remove the title bar... looks better without
+  setTimeout(function() {
+    $("#qlhmSource").find(".modal-title").remove();
   }, 0);
 }
 
@@ -353,7 +375,7 @@ HudManager.prototype.handleConsoleClose = function() {
     qz_instance.SendGameCommand("web_reload");
   } 
   else {
-    $("#prompt").jqmHide();
+    $("#qlhmPrompt").jqmHide();
   }  
 }
 
@@ -536,6 +558,16 @@ HookManager.prototype.injectUserScript = function(aScript) {
 HookManager.prototype.getUserScriptGM = function(aScriptID) {
   var out = "";
   return out;
+}
+
+HookManager.prototype.getUserScript = function(aScriptID) {
+  return storage.scripts.cache[aScriptID];
+}
+
+HookManager.prototype.getUserScriptSource = function(aScriptID) {
+  var script = this.getUserScript(aScriptID);
+  if (!script) return;
+  return script.content;
 }
 
 // Make init available
