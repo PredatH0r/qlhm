@@ -176,7 +176,7 @@ HudManager.prototype.scriptRowFromScript = function(aScript) {
 
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
-       + " <label for='userscript" + id + "'><a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScript.headers.name[0] + "</a></label>" 
+       + " <label for='userscript" + id + "'><a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScript.headers.name[0] + "</a></label>" 
        + " &mdash; <a href='javascript:void(0)' class='del'>[DELETE]</a>"
        + " &nbsp; <a href='javascript:void(0)' class='viewSource'>[SOURCE]</a><br>"
        + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + author
@@ -189,7 +189,7 @@ HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-add'>"
        + " <label for='userscript" + id + "'>"
-       + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a><br>"
+       + "<a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a><br>"
        + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + aScriptInfo.author + "</div></li>";
 }
 
