@@ -80,8 +80,11 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
   }
 
   if (reqURL && reqID) {
+    // Create a cache entry if needed so we can always set "nextCheck"
+    if (!(reqID in SCRIPT_CACHE)) SCRIPT_CACHE[reqID] = {};
+
     // Send from cache if available and we're not due for a refresh attempt
-    if (reqID in SCRIPT_CACHE && !moment().isAfter(SCRIPT_CACHE[reqID].nextCheck)) {
+    if (reqID in SCRIPT_CACHE && SCRIPT_CACHE[reqID].nextCheck && !moment().isAfter(SCRIPT_CACHE[reqID].nextCheck)) {
       if (SCRIPT_CACHE[reqID].body) {
         console.log("retrieving script %d from cache", reqID);
         res.send(SCRIPT_CACHE[reqID].body);
