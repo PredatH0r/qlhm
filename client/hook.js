@@ -116,7 +116,7 @@ readOnly(storage, "save", function storageSave() {
  */
 function HudManager(aHookManager) {
   readOnly(this, "hm", aHookManager);
-  readOnly(this, "width", 800);
+  readOnly(this, "width", 900);
 
   quakelive.AddHook("OnLayoutLoaded", this.OnLayoutLoaded.bind(this));
 
@@ -149,13 +149,17 @@ HudManager.prototype.injectMenuEntry = function() {
   injectStyle([
       "#hooka { position: relative; bottom: 20px; left: 10px; z-index: 99999; font-weight: bold; padding: 2px; text-shadow: 0 0 10px #000; }"
     , "#hooka:hover { cursor: pointer; text-shadow: 0 0 10px yellow; }"
-    , "#qlhm_console { text-align: left !important; width: 100%;}"
+    , "#qlhm_console { text-align: left !important; width: 100%; }"
     , "#qlhm_console strong, #qlhm_console legend { font-weight: bold; }"
     , "#qlhm_console fieldset { margin: 10px 0 20px 0; padding: 5px; }"
     , "#qlhm_console ul { list-style: none; }"
     , "#qlhm_console input.userscript-new { width: 500px; margin-bottom: 5px; }"
     , "#qlhm_console a.del, #qlhm_console a.viewSource { text-decoration: none; }"
     , "#qlhm_console .strike { text-decoration: line-through; }"
+    , "#qlhm_console .details { margin-left: 15px; font-size: smaller; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: " + (self.width - 50) + "px; }"
+    , "#qlhm_console .column { padding-left: 5px; border-left: 1px solid #eee; -webkit-column-rule: 1px solid #eee; }"
+    , "#qlhm_console .columns2 { -webkit-columns: 2; }"
+    , "#qlhm_console .columns3 { -webkit-columns: 3; }"
     , "#qlhmSource textarea.userscript-source { width: " + (self.width - 140) + "px; }"
   ]);
 
@@ -163,14 +167,20 @@ HudManager.prototype.injectMenuEntry = function() {
 }
 
 HudManager.prototype.scriptRowFromScript = function(aScript) {
-  var id = aScript._meta.id;
-  var enabled = -1 !== storage.scripts.enabled.indexOf(id);
+  var id = aScript._meta.id
+    , enabled = -1 !== storage.scripts.enabled.indexOf(id)
+    , author = aScript.headers.author ? aScript.headers.author[0] : "<em>Unspecified</em>"
+    , desc = aScript.headers.description ? aScript.headers.description[0] : "<em>Unspecified</em>"
+    , version = aScript.headers.version ? aScript.headers.version[0] : "<em>Unspecified</em>"
+    ;
+
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
-       + " <label for='userscript" + id + "'>" 
-       + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScript.headers.name[0] + "</a>" 
-       + " <small>(ID: " + id + ")</small></label> &hellip; <a href='javascript:void(0)' class='del'>[DELETE]</a> &hellip;"
-       + " <a href='javascript:void(0)' class='viewSource'>[SOURCE]</a></li></li>";
+       + " <label for='userscript" + id + "'><a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScript.headers.name[0] + "</a></label>" 
+       + " &mdash; <a href='javascript:void(0)' class='del'>[DELETE]</a>"
+       + " &nbsp; <a href='javascript:void(0)' class='viewSource'>[SOURCE]</a><br>"
+       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + author
+       + " &mdash; <b>Version:</b> " + version + " &mdash; <b>Description:</b> " + desc + "</div></li>";
 }
 
 HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
@@ -178,9 +188,9 @@ HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
   var note = "note" in aScriptInfo ? " - <b>NOTE:</b> " + aScriptInfo.note : "";
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-add'>"
-       + " <label for='userscript" + id + "'>" 
-       + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a>" 
-       + " <small>(ID: " + id + ")</small></label>" + note + "</li>";
+       + " <label for='userscript" + id + "'>"
+       + "<a href='http://www.userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a><br>"
+       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + aScriptInfo.author + "</div></li>";
 }
 
 HudManager.prototype.showConsole = function() {
@@ -219,7 +229,7 @@ HudManager.prototype.showConsole = function() {
   out.push("</fieldset>");  
   out.push("<fieldset><legend>Add Scripts</legend>");
   out.push("<input type='text' class='userscript-new' placeholder='Enter userscripts.org script IDs directly -or- select from below'>");  
-  out.push("<ul id='userscriptsRepository'>");
+  out.push("<ul id='userscriptsRepository' class='column columns3'>");
   // will be populated by addRepositoryScripts
   out.push("</ul>");  
   out.push("</fieldset>");
