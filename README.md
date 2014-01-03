@@ -61,10 +61,11 @@ to modify `config.BASE_URL` in "hook.js".
 
 ### Server
 
-1. `git clone https://github.com/supahgreg/qlhm.git`
-2. `cd server`
-3. `npm install -d`
-4. `node app`
+1. Install [node.js](http://nodejs.org)
+2. `git clone https://github.com/supahgreg/qlhm.git` or [grab a specific release](https://github.com/supahgreg/qlhm/releases)
+3. `cd server`
+4. `npm install -d`
+5. `node app`
 
 
 ## Userscript Developers
