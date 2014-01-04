@@ -92,6 +92,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
     // Send from cache if available and we're not due for a refresh attempt
     if (reqID in SCRIPT_CACHE && SCRIPT_CACHE[reqID].nextCheck && !moment().isAfter(SCRIPT_CACHE[reqID].nextCheck)) {
       if (SCRIPT_CACHE[reqID].body) {
+        SCRIPT_CACHE[reqID].body._meta.nextCheckMinutes = SCRIPT_CACHE[reqID].nextCheck.diff(moment(), "minutes");
         res.send(SCRIPT_CACHE[reqID].body);
       }
       else {
@@ -138,6 +139,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
                 , lastCheckUTC: moment.utc().format()
                 , nextCheck: SCRIPT_CACHE[reqID].nextCheck.valueOf()
                 , nextCheckUTC: SCRIPT_CACHE[reqID].nextCheck.utc()
+                , nextCheckMinutes: SCRIPT_CACHE[reqID].nextCheck.diff(moment(), "minutes")
               }
             , headers: scriptHeaders
             , content: usoBody
