@@ -131,7 +131,17 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
           // Wait 30 minutes for the next recache.
 
           SCRIPT_CACHE[reqID].nextCheck = moment().add("minutes", 30);
-          SCRIPT_CACHE[reqID].body = {"_meta": {id: reqID, lastCheck: Date.now()}, headers: scriptHeaders, content: usoBody};
+          SCRIPT_CACHE[reqID].body = {
+              "_meta": {
+                  id: reqID
+                , lastCheck: Date.now()
+                , lastCheckUTC: moment.utc().format()
+                , nextCheck: SCRIPT_CACHE[reqID].nextCheck.valueOf()
+                , nextCheckUTC: SCRIPT_CACHE[reqID].nextCheck.utc()
+              }
+            , headers: scriptHeaders
+            , content: usoBody
+          };
           res.send(SCRIPT_CACHE[reqID].body);
         }
       });
