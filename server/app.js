@@ -60,7 +60,6 @@ server.get({path: "/versioncheck", version: "1.0.0"}, function(req, res, next) {
 
 server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next) {
   var scriptID, scriptURL, reqID, reqURL;
-  var now = moment().format();
 
   // trailing slugs
   if (req.params[0]) {
