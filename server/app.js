@@ -116,7 +116,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
           var scriptHeaders = Scriptish_parser(usoBody)
             , scriptName = scriptHeaders.name ? scriptHeaders.name[0] : "unspecified"
             ;
-          console.log("\tSuccessful response for script \"%s\" (%d, %s)", scriptName, reqID, reqURL);
+          console.log("\tSuccessful response for script %d (\"%s\", %s)", reqID, scriptName, reqURL);
 
           // Clear the cache entry
           SCRIPT_CACHE[reqID] = {};
