@@ -157,9 +157,10 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console a.del, #qlhm_console a.viewSource { text-decoration: none; }"
     , "#qlhm_console .strike { text-decoration: line-through; }"
     , "#qlhm_console .details { margin-left: 15px; font-size: smaller; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: " + (self.width - 50) + "px; }"
-    , "#qlhm_console .column { padding-left: 5px; border-left: 1px solid #eee; -webkit-column-rule: 1px solid #eee; }"
+    , "#qlhm_console .columns { padding-left: 5px; border-left: 1px solid #eee; -webkit-column-rule: 1px solid #eee; }"
     , "#qlhm_console .columns2 { -webkit-columns: 2; }"
     , "#qlhm_console .columns3 { -webkit-columns: 3; }"
+    , "#qlhm_console .columns > li { -webkit-column-break-inside: avoid; }"
     , "#qlhmSource textarea.userscript-source { width: " + (self.width - 140) + "px; }"
   ]);
 
@@ -229,7 +230,7 @@ HudManager.prototype.showConsole = function() {
   out.push("</fieldset>");  
   out.push("<fieldset><legend>Add Scripts</legend>");
   out.push("<input type='text' class='userscript-new' placeholder='Enter userscripts.org script IDs directly -or- select from below'>");  
-  out.push("<ul id='userscriptsRepository' class='column columns3'>");
+  out.push("<ul id='userscriptsRepository' class='columns columns3'>");
   // will be populated by addRepositoryScripts
   out.push("</ul>");  
   out.push("</fieldset>");
