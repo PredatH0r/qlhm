@@ -66,6 +66,7 @@ to modify `config.BASE_URL` in "hook.js".
 3. `cd server`
 4. `npm install -d`
 5. `node app`
+6. Update your client `hook.js` (`config.BASE_URL`)
 
 
 ## Userscript Developers
