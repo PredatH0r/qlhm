@@ -156,7 +156,8 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console input.userscript-new { width: 500px; margin-bottom: 5px; }"
     , "#qlhm_console a.del, #qlhm_console a.viewSource { text-decoration: none; }"
     , "#qlhm_console .strike { text-decoration: line-through; }"
-    , "#qlhm_console .details { margin-left: 15px; font-size: smaller; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: " + (self.width - 50) + "px; }"
+    , "#qlhm_console .details { margin-left: 15px; font-size: smaller; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: " + (self.width - 50) + "px; }"
+    , "#qlhm_console .note { margin-left: 15px; font-size: smaller; }"
     , "#qlhm_console .columns { padding-left: 5px; border-left: 1px solid #eee; -webkit-column-rule: 1px solid #eee; }"
     , "#qlhm_console .columns2 { -webkit-columns: 2; }"
     , "#qlhm_console .columns3 { -webkit-columns: 3; }"
@@ -186,12 +187,12 @@ HudManager.prototype.scriptRowFromScript = function(aScript) {
 
 HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
   var id = aScriptInfo.id;
-  var note = "note" in aScriptInfo ? " - <b>NOTE:</b> " + aScriptInfo.note : "";
+  var note = "note" in aScriptInfo ? ("<div class='note'><b>NOTE:</b> " + aScriptInfo.note + "</div>") : "";
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-add'>"
        + " <label for='userscript" + id + "'>"
        + "<a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a><br>"
-       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + aScriptInfo.author + "</div></li>";
+       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + aScriptInfo.author + "</div>" + note + "</li>";
 }
 
 HudManager.prototype.showConsole = function() {
