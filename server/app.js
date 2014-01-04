@@ -113,7 +113,10 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
           res.send(404, {error: "Invalid request"});
         }
         else {
-          console.log("\tSuccessful response for script %d (%s)", reqID, reqURL);
+          var scriptHeaders = Scriptish_parser(usoBody)
+            , scriptName = scriptHeaders.name ? scriptHeaders.name[0] : "unspecified"
+            ;
+          console.log("\tSuccessful response for script \"%s\" (%d, %s)", scriptName, reqID, reqURL);
 
           // Clear the cache entry
           SCRIPT_CACHE[reqID] = {};
@@ -122,7 +125,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
           // Wait 30 minutes for the next recache.
 
           SCRIPT_CACHE[reqID].nextCheck = moment().add("minutes", 30);
-          SCRIPT_CACHE[reqID].body = {"_meta": {id: reqID, lastCheck: Date.now()}, headers: Scriptish_parser(usoBody), content: usoBody};
+          SCRIPT_CACHE[reqID].body = {"_meta": {id: reqID, lastCheck: Date.now()}, headers: scriptHeaders, content: usoBody};
           res.send(SCRIPT_CACHE[reqID].body);
         }
       });
