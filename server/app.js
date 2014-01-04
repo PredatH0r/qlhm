@@ -86,30 +86,35 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
     // Send from cache if available and we're not due for a refresh attempt
     if (reqID in SCRIPT_CACHE && SCRIPT_CACHE[reqID].nextCheck && !moment().isAfter(SCRIPT_CACHE[reqID].nextCheck)) {
       if (SCRIPT_CACHE[reqID].body) {
-        console.log("retrieving script %d from cache", reqID);
         res.send(SCRIPT_CACHE[reqID].body);
       }
       else {
-        res.send(403, {
-            error: util.format("Previous request for script with ID %d failed.%s", reqID,
-                (moment.isMoment(SCRIPT_CACHE[reqID].nextCheck) ? util.format("  You can try again %s.", SCRIPT_CACHE[reqID].nextCheck.fromNow()) : ""))
-        });
+        var tryAgainIn = moment.isMoment(SCRIPT_CACHE[reqID].nextCheck) ? util.format("  You can try again %s.", SCRIPT_CACHE[reqID].nextCheck.fromNow()) : ""
+          , errMsg = util.format("Previous request for script with ID %d failed.%s", reqID, tryAgainIn)
+          ;
+        console.log("\t" + errMsg);
+        res.send(403, { error: errMsg });
       }
     }
     // Otherwise try a request from USO
     else {
+      console.log("\tPerforming a new request for script %d (%s)", reqID, reqURL);
       request({url: reqURL, timeout: 10E3}, function(usoError, usoResponse, usoBody) {
         if (404 === usoResponse.statusCode) {
+          console.log("\t404 received for script %d (%s)", reqID, reqURL);
           // Wait 60 minutes if USO said it couldn't be found
           SCRIPT_CACHE[reqID].nextCheck = moment().add("minutes", 60);
           res.send(404, {error: util.format("Script with ID %d was not found", reqID)});
         }
         else if (usoError) {
+          console.log("\tNon-404 error for script %d (%s): %s", reqID, reqURL, usoError);
           // Wait 5 minutes if there was a non-404 error in retrieval
           SCRIPT_CACHE[reqID].nextCheck = moment().add("minutes", 5);
           res.send(404, {error: "Invalid request"});
         }
         else {
+          console.log("\tSuccessful response for script %d (%s)", reqID, reqURL);
+
           // Clear the cache entry
           SCRIPT_CACHE[reqID] = {};
 
