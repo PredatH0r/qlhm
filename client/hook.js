@@ -424,7 +424,7 @@ HookManager.prototype.versionCheck = function() {
     , dataType: "jsonp"
   }).done(function(data) {
     if (data.new) {
-      console.log("New version found: " + data.new.version);
+      console.log("New version of " + self.name + " found: " + data.new.version);
       var out = "A new version (" + data.new.version + ") of " + self.name + " is available @ <a href='"
               + data.new.url + "' target='_blank'>" + data.new.url + "</a>.<br><br>You will need to manually update your "
               + "\"hook.js\" file, which is currently at version " + self.version + ".";
@@ -434,7 +434,7 @@ HookManager.prototype.versionCheck = function() {
       });
     }
     else {
-      console.log("On the latest client release");
+      console.log("On the latest " + self.name + " client release");
     }
   });
 }
