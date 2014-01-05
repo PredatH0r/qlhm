@@ -155,7 +155,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
           }
 
           // Wait 30 minutes for the next recache.
-          updateMetaTimes(SCRIPT_CACHE[scriptID], 2);
+          updateMetaTimes(SCRIPT_CACHE[scriptID], 30);
 
           res.send(SCRIPT_CACHE[scriptID].body);
         });
@@ -165,7 +165,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
         logTime("The cached version of script %d (\"%s\", \"uso:version\": \"%s\") is the latest available.",
             scriptID, scriptName, aHeaders["uso:version"][0]);
         // Wait 30 minutes for the next recache.
-        updateMetaTimes(SCRIPT_CACHE[scriptID], 2);
+        updateMetaTimes(SCRIPT_CACHE[scriptID], 30);
         res.send(SCRIPT_CACHE[scriptID].body);
       }
     });
