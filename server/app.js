@@ -162,7 +162,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
       }
       // Cached script is still okay... update times and send it along
       else {
-        logTime("The cached version of script %d (\"%s\", \"uso:version\": \"%s\") is the latest available.",
+        logTime("The cached version of script %d (\"%s\", \"uso:version\": %d) is the latest available.",
             scriptID, scriptName, aHeaders["uso:version"][0]);
         // Wait 30 minutes for the next recache.
         updateMetaTimes(SCRIPT_CACHE[scriptID], 30);
