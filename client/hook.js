@@ -481,7 +481,7 @@ HookManager.prototype.loadScripts = function() {
       url: scriptURL
     , dataType: "jsonp"
     }).done(function(aData) {
-      injectScript(";(function() {" + self.getUserScriptGM(-1) + ";" + aData + "})();");
+      injectScript(";(function() {" + aData + "})();");
     });
   });
 }
@@ -577,12 +577,7 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
 
 HookManager.prototype.injectUserScript = function(aScript) {
   console.log("^7Loading userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
-  injectScript(";(function() {" + this.getUserScriptGM(aScript._meta.id) + ";" + aScript.content + "})();");
-}
-
-HookManager.prototype.getUserScriptGM = function(aScriptID) {
-  var out = "";
-  return out;
+  injectScript(";(function() {" + aScript.content + "})();");
 }
 
 HookManager.prototype.getUserScript = function(aScriptID) {
