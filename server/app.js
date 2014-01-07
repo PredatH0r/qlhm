@@ -65,8 +65,8 @@ server.get({path: "/serving", version: "1.0.0"}, function(req, res, next) {
   var scripts = [];
   for (var id in SCRIPT_CACHE) {
     scripts.push({
-        id: id
-      , name: (SCRIPT_CACHE[id].body ? SCRIPT_CACHE[id].body.headers.name: "not provided")
+        id: parseInt(id)
+      , name: (SCRIPT_CACHE[id].body ? (SCRIPT_CACHE[id].body.headers.name+"") : "not provided")
     });
   }
   scripts.sort(function(a, b) {
