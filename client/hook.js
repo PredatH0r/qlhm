@@ -62,6 +62,15 @@ function extend(aTarget, aSource, aProtect) {
   }
 }
 
+// Escape HTML
+// originally from mustache.js MIT ( https://raw.github.com/janl/mustache.js/master/LICENSE )
+var entityMap = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "/": "&#x2F;" };
+function e(aStr) {
+  return String(aStr).replace(/[&<>"'\/]/g, function(s) {
+    return entityMap[s];
+  });
+}
+
 function injectStyle(aStyle) {
   var s = document.createElement("style");
   s.type = "text/css";
@@ -171,14 +180,14 @@ HudManager.prototype.injectMenuEntry = function() {
 HudManager.prototype.scriptRowFromScript = function(aScript) {
   var id = aScript._meta.id
     , enabled = -1 !== storage.scripts.enabled.indexOf(id)
-    , author = aScript.headers.author ? aScript.headers.author[0] : "<em>Unspecified</em>"
-    , desc = aScript.headers.description ? aScript.headers.description[0] : "<em>Unspecified</em>"
-    , version = aScript.headers.version ? aScript.headers.version[0] : "<em>Unspecified</em>"
+    , author = aScript.headers.author ? e(aScript.headers.author[0]) : "<em>Unspecified</em>"
+    , desc = aScript.headers.description ? e(aScript.headers.description[0]) : "<em>Unspecified</em>"
+    , version = aScript.headers.version ? e(aScript.headers.version[0]) : "<em>Unspecified</em>"
     ;
 
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
-       + " <label for='userscript" + id + "'><a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScript.headers.name[0] + "</a></label>" 
+       + " <label for='userscript" + id + "'><a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + e(aScript.headers.name[0]) + "</a></label>" 
        + " &mdash; <a href='javascript:void(0)' class='del'>[DELETE]</a>"
        + " &nbsp; <a href='javascript:void(0)' class='viewSource'>[SOURCE]</a><br>"
        + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + author
@@ -186,13 +195,15 @@ HudManager.prototype.scriptRowFromScript = function(aScript) {
 }
 
 HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
-  var id = aScriptInfo.id;
-  var note = "note" in aScriptInfo ? ("<div class='note'><b>NOTE:</b> " + aScriptInfo.note + "</div>") : "";
+  var id = aScriptInfo.id
+    , note = "note" in aScriptInfo ? ("<div class='note'><b>NOTE:</b> " + aScriptInfo.note + "</div>") : ""
+    ;
+
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-add'>"
        + " <label for='userscript" + id + "'>"
-       + "<a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + aScriptInfo.name + "</a><br>"
-       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + aScriptInfo.author + "</div>" + note + "</li>";
+       + "<a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + e(aScriptInfo.name) + "</a><br>"
+       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + e(aScriptInfo.author) + "</div>" + note + "</li>";
 }
 
 HudManager.prototype.showConsole = function() {
@@ -321,16 +332,18 @@ HudManager.prototype.handleConsoleOk = function() {
 
   ids = ids.replace(/https:\/\/userscripts\.org\/scripts\/[a-z]+\//g, "").replace(/[^\d,]/g, "");
   ids = ids.split(",").map(function(id) { return parseInt(id.trim()); });
+
   $con.find("input.userscript-add").each(function() {
     var $input = $(this)
       , $item = $input.closest("li")
-      , id = parseInt($item.data("id"));
+      , id = parseInt($item.data("id"))
+      ;
+
     if ($input.prop("checked")) {
       ids.push(id);
       $item.remove();
     }
   });
-
 
   $.each(ids, function(i, id) {
     // New userscript?
