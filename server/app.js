@@ -61,6 +61,21 @@ server.get({path: "/versioncheck", version: "1.0.0"}, function(req, res, next) {
   res.send({"new": {version: LATEST_CLIENT_VERSION, url: LATEST_CLIENT_DOWNLOAD_URL}});
 });
 
+server.get({path: "/serving", version: "1.0.0"}, function(req, res, next) {
+  var scripts = [];
+  for (var id in SCRIPT_CACHE) {
+    scripts.push({
+        id: id
+      , name: (SCRIPT_CACHE[id].body ? SCRIPT_CACHE[id].body.headers.name: "not provided")
+    });
+  }
+  scripts.sort(function(a, b) {
+    a = a.name.toLowerCase(), b = b.name.toLowerCase();
+    return (a < b ? -1 : a > b ? 1 : 0);
+  });
+  res.send(scripts);
+});
+
 server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next) {
   var scriptID = uso.parseID(req.params[0]);
   if (!scriptID) return res.send(404, {error: "Invalid or missing options.  '/uso/[id_number]' and '/uso/[full_url_to_.user.js]' are accepted."});
@@ -174,7 +189,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
 
 // Static content
 // TODO: this regexp is unbelievably bad... replace it
-server.get(/^\/((?!(?:uso|versioncheck)).)*$/, restify.serveStatic({
+server.get(/^\/((?!(?:serving|uso|versioncheck)).)*$/, restify.serveStatic({
     directory: "./public"
   , default: "index.html"
   , maxAge: 300
