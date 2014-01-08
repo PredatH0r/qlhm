@@ -123,8 +123,17 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
       var scriptName = aHeaders.name ? aHeaders.name[0] : "unspecified";
       logTime("Successful metadata retrieval for script %d (\"%s\")", scriptID, scriptName);
 
-      if (!SCRIPT_CACHE[scriptID].body
-          || SCRIPT_CACHE[scriptID].body._meta["uso:version"] !== aHeaders["uso:version"][0]) {
+      // If we have a cached response with the same "uso:version" update times and send it along
+      if (SCRIPT_CACHE[scriptID].body
+          && parseInt(SCRIPT_CACHE[scriptID].body._meta["uso:version"]) === parseInt(aHeaders["uso:version"][0])) {
+        logTime("The cached version of script %d (\"%s\", \"uso:version\": %d) is the latest available.",
+            scriptID, scriptName, aHeaders["uso:version"][0]);
+        // Wait 30 minutes for the next recache.
+        updateMetaTimes(SCRIPT_CACHE[scriptID], 30);
+        res.send(SCRIPT_CACHE[scriptID].body);
+      }
+      // Otherwise we need to send a new request...
+      else {
         if (!SCRIPT_CACHE[scriptID].body) {
           logTime("Script %d (\"%s\") is not cached.  Requesting full script (\"uso:version\" %d)...",
               scriptID, scriptName, aHeaders["uso:version"]);
@@ -174,14 +183,6 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
 
           res.send(SCRIPT_CACHE[scriptID].body);
         });
-      }
-      // Cached script is still okay... update times and send it along
-      else {
-        logTime("The cached version of script %d (\"%s\", \"uso:version\": %d) is the latest available.",
-            scriptID, scriptName, aHeaders["uso:version"][0]);
-        // Wait 30 minutes for the next recache.
-        updateMetaTimes(SCRIPT_CACHE[scriptID], 30);
-        res.send(SCRIPT_CACHE[scriptID].body);
       }
     });
   }
