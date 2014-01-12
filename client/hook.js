@@ -7,11 +7,6 @@
 function main_hook() {
   console.log("main_hook called");
   if (quakelive.mod_legals !== quakelive.activeModule) HOOK_MANAGER.init();
-
-  //$.getScript("http://beham.biz/ql/qlAltMenu.js");
-  $.getScript("http://localhost/qlAltMenu.js");
-  $.getScript("http://localhost/qlPlayerStatus.js");
-  $.getScript("http://localhost/smartPlayerlistPositioning.js");
 }
 
 
