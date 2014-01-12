@@ -443,7 +443,6 @@ HudManager.prototype.handleConsoleOk = function() {
 
     if ($input.prop("checked") && !self.hm.hasUserScript(id)) {            
       ids.push(id);
-      $item.find("a").removeClass("notInstalled");
     }
   });
 
@@ -455,10 +454,14 @@ HudManager.prototype.handleConsoleOk = function() {
       }
       else {
         console.log("Trying to fetch userscript with ID '" + id + "'");
+        var $script = $("#userscript" + id);
+        $script.find("a").removeClass("notInstalled");
+        $script.find(":checkbox").prop("checked", true);
         self.hm.fetchScript(id, function(aScript) {
           // TODO: manage the userscript list better... this won't necessarily be in the correct position
           if ($("#userscript" + id).length == 0)
             $con.find("#userscripts").append(self.scriptRowFromScript(aScript));
+          self.showDetails();
         });
       }
     }
@@ -472,8 +475,7 @@ HudManager.prototype.handleConsoleOk = function() {
     $("#modal-cancel").prop("value", "Restart");
   }
 
-  // give a new script some time to load before updating the details
-  window.setTimeout(function() { self.showDetails(); }, 500);
+  self.showDetails();
 }
 
 HudManager.prototype.handleConsoleClose = function() {
