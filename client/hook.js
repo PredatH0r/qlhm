@@ -1,12 +1,17 @@
 /**
  * QUAKE LIVE HOOK MANAGER
- * Version: 0.2
+ * Version: 0.3 (proposed)
  */
 
 // called in ql.Init
 function main_hook() {
   console.log("main_hook called");
   if (quakelive.mod_legals !== quakelive.activeModule) HOOK_MANAGER.init();
+
+  //$.getScript("http://beham.biz/ql/qlAltMenu.js");
+  $.getScript("http://localhost/qlAltMenu.js");
+  $.getScript("http://localhost/qlPlayerStatus.js");
+  $.getScript("http://localhost/smartPlayerlistPositioning.js");
 }
 
 
@@ -41,7 +46,6 @@ var webReloadRequired = false;
 
 // Local reference to jQuery (set during initialization)
 var $;
-
 
 /**
  * Helpers
@@ -126,7 +130,8 @@ readOnly(storage, "save", function storageSave() {
 function HudManager(aHookManager) {
   readOnly(this, "hm", aHookManager);
   readOnly(this, "width", 900);
-
+  this.selectedScriptElement = null;
+  
   quakelive.AddHook("OnLayoutLoaded", this.OnLayoutLoaded.bind(this));
 
   // 2013-11-23 window.alert is currently unhandled... remove this if native (i.e. non-JS) option
@@ -162,15 +167,17 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console strong, #qlhm_console legend { font-weight: bold; }"
     , "#qlhm_console fieldset { margin: 10px 0 20px 0; padding: 5px; }"
     , "#qlhm_console ul { list-style: none; }"
-    , "#qlhm_console input.userscript-new { width: 500px; margin-bottom: 5px; }"
+    , "#qlhm_console ul li { margin-top: 5px; whitespace: nowrap; overflow:hidden; }"
+    , "#qlhm_console ul li.selected { background-color: #ffc; }"
+    , "#qlhm_console input.userscript-new { width: 400px; margin-bottom: 5px; }"
     , "#qlhm_console a.del, #qlhm_console a.viewSource { text-decoration: none; }"
     , "#qlhm_console .strike { text-decoration: line-through; }"
     , "#qlhm_console .details { margin-left: 15px; font-size: smaller; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: " + (self.width - 50) + "px; }"
-    , "#qlhm_console .note { margin-left: 15px; font-size: smaller; }"
-    , "#qlhm_console .columns { padding-left: 5px; border-left: 1px solid #eee; -webkit-column-rule: 1px solid #eee; }"
-    , "#qlhm_console .columns2 { -webkit-columns: 2; }"
-    , "#qlhm_console .columns3 { -webkit-columns: 3; }"
-    , "#qlhm_console .columns > li { -webkit-column-break-inside: avoid; }"
+    , ".table { display: table; }"
+    , ".row { display: table-row; }"
+    , ".cell { display: table-cell; padding-right: 10px; }"
+    , "#qlhm_console .notInstalled { color: #aaa; }"
+    , "#userscripts { overflow: auto; width: 550px; max-height: 400px; }"
     , "#qlhmSource textarea.userscript-source { width: " + (self.width - 140) + "px; }"
   ]);
 
@@ -180,146 +187,212 @@ HudManager.prototype.injectMenuEntry = function() {
 HudManager.prototype.scriptRowFromScript = function(aScript) {
   var id = aScript._meta.id
     , enabled = -1 !== storage.scripts.enabled.indexOf(id)
-    , author = aScript.headers.author ? e(aScript.headers.author[0]) : "<em>Unspecified</em>"
     , desc = aScript.headers.description ? e(aScript.headers.description[0]) : "<em>Unspecified</em>"
-    , version = aScript.headers.version ? e(aScript.headers.version[0]) : "<em>Unspecified</em>"
     ;
 
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
-       + " <label for='userscript" + id + "'><a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + e(aScript.headers.name[0]) + "</a></label>" 
-       + " &mdash; <a href='javascript:void(0)' class='del'>[DELETE]</a>"
-       + " &nbsp; <a href='javascript:void(0)' class='viewSource'>[SOURCE]</a><br>"
-       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + author
-       + " &mdash; <b>Version:</b> " + version + " &mdash; <b>Description:</b> " + desc + "</div></li>";
+       + " <label for='userscript" + id + "'><a href='javascript:void(0)'>" + e(aScript.headers.name[0]) + "</a></label>"
+       //+ "<br><div class='details'>" + desc + "</div>"
+       + "</li>";
 }
 
 HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
-  var id = aScriptInfo.id
-    , note = "note" in aScriptInfo ? ("<div class='note'><b>NOTE:</b> " + aScriptInfo.note + "</div>") : ""
-    ;
-
+  var id = aScriptInfo.id;
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
-       + "<input type='checkbox' class='userscript-add'>"
+       + "<input type='checkbox' class='userscript-state'>"
        + " <label for='userscript" + id + "'>"
-       + "<a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + e(aScriptInfo.name) + "</a><br>"
-       + "<div class='details'><b>ID:</b> " + id + " &mdash; <b>Author:</b> " + e(aScriptInfo.author) + "</div>" + note + "</li>";
+       + "<a class='notInstalled' style='text-style:italic' href='javascript:void(0)' target='_empty'>" + e(aScriptInfo.name) + "</a></label>"
+       + "</li>";
 }
 
-HudManager.prototype.showConsole = function() {
-  var self = this;
+  HudManager.prototype.showConsole = function() {
+    var self = this;
 
-  webReloadRequired = false;
-
-  // Get and sort all scripts
-  var scripts = [];
-  for (var i = 0, e = storage.scripts.available.length; i < e; ++i) {
-    scripts.push(storage.scripts.cache[storage.scripts.available[i]]);
+    $.getScript(USERSCRIPT_REPOSITORY_URL)
+      .done(function() { self.onRepositoryLoaded();})
+      .fail(function () { self.onRepositoryLoaded(); });    
   }
-  scripts.sort(function(a, b) {
-    a = a.headers.name[0].toLowerCase(), b = b.headers.name[0].toLowerCase();
-    return (a < b ? -1 : a > b ? 1 : 0);
-  });
+  
+  HudManager.prototype.onRepositoryLoaded = function() {
+    var self = this;
 
-  // Get and sort scripts from repository file
-  $.getScript(USERSCRIPT_REPOSITORY_URL, function() {
-    HOOK_MANAGER.userscriptRepository.sort(function(a, b) {
-      a = a.name.toLowerCase(), b = b.name.toLowerCase();
-      return (a < b ? -1 : a > b ? 1 : 0);
+    webReloadRequired = false;
+
+    // Get and sort all scripts
+    var scripts = [];
+    for (var i = 0, e = storage.scripts.available.length; i < e; ++i) {
+      scripts.push(storage.scripts.cache[storage.scripts.available[i]]);
+    }
+    $.each(HOOK_MANAGER.userscriptRepository, function(index, script) {
+      if (storage.scripts.available.indexOf(script.id) == -1)
+        scripts.push(script);
     });
-    self.addRepositoryScripts();
-  });
+    
+    scripts.sort(function(a, b) {
+      var x = a.headers ? a.headers.name[0] : a.name;
+      var y = b.headers ? b.headers.name[0] : b.name;
+      x = x.toLowerCase(), y = y.toLowerCase();
+      return (x < y ? -1 : x > y ? 1 : 0);
+    });
 
-  // Generate the console
-  var out = [];
-  out.push("<div id='qlhm_console'>");
-  out.push("<fieldset><legend>Installed Scripts</legend>");
-  out.push("<ul id='userscripts'>");
-  $.each(scripts, function(i, script) {
-    out.push(self.scriptRowFromScript(script));
-  });
-  out.push("</ul>");
-  out.push("</fieldset>");  
-  out.push("<fieldset><legend>Add Scripts</legend>");
-  out.push("<input type='text' class='userscript-new' placeholder='Enter userscripts.org script IDs directly -or- select from below'>");  
-  out.push("<ul id='userscriptsRepository' class='columns columns3'>");
-  // will be populated by addRepositoryScripts
-  out.push("</ul>");  
-  out.push("</fieldset>");
-  out.push("</div>");
+    // Generate the console
+    var out = [];
+    out.push("<div id='qlhm_console'>");
+    out.push("<fieldset>");
+    out.push("<b>Add Scripts:</b>");
+    out.push(" &nbsp; <input type='text' class='userscript-new' placeholder='Enter userscripts.org script IDs directly -or- select from below'>");
+    out.push("<div>");
+    out.push("</fieldset>");
 
-  // Inject the console
-  qlPrompt({
-      id: "qlhmPrompt"
-    , title: self.hm.name + " <small>(v" + self.hm.version + ")</small>"
-    , customWidth: self.width
-    , ok: self.handleConsoleOk.bind(self)
-    , okLabel: "Apply"
-    , cancel: self.handleConsoleClose.bind(self)
-    , cancelLabel: "Close"
-    , body: out.join("")
-  });
+    out.push("<div style='float:right; position: relative; top: 0px; width: 270px'>");
+    out.push("<b>Script Details</b>");
+    out.push("<div id='scriptDetails'>(click on a script to see the details)</div>");
+    out.push("</div>");
 
-  // Wait for the prompt to get inserted then do stuff...
-  setTimeout(function() {
-    $("#modal-cancel").focus();
+    out.push("<div>");
+    out.push("<fieldset>");
+    out.push("<b>User Scripts</b>");
+    out.push(" &nbsp; ");
+    out.push("(<a class='selectall' href='javascript:void(0)'>select all</a>");
+    out.push(" - <a class='unselectall' href='javascript:void(0)'>unselect all</a>");
+    out.push(" - <a class='deleteunsel' href='javascript:void(0)'>delete unselected</a>");
+    out.push(")");
+    out.push("<ul id='userscripts'>");
+    $.each(scripts, function(i, script) {
+      if (script._meta)
+        out.push(self.scriptRowFromScript(script));
+      else
+        out.push(self.scriptRowFromScriptRepository(script));
+    });
+    out.push("</ul>");
+    out.push("</fieldset>");
+    out.push("</div>");
+    
+    out.push("</div>");
 
-    $("#qlhm_console")
-    // Suppress backtick (99.999% intended for the QL console)
-    .on("keydown", function(ev) {
-      if (192 == ev.keyCode) ev.preventDefault();
-    })
-    // Open a prompt to show the selected userscript's source
-    .on("click", "#userscripts a.viewSource", function() {
-      self.showSource($(this).closest("li").data("id"));
-    })
-    // Toggle a userscript being marked as deleted
-    .on("click", "#userscripts a.del", function() {
-      var $this = $(this)
-        , id = $this.closest("li").data("id")
-        , $item = $("#userscript" + id)
+    // Inject the console
+    qlPrompt({
+      id: "qlhmPrompt",
+      title: self.hm.name + " <small>(v" + self.hm.version + ")</small>",
+      customWidth: self.width,
+      ok: self.handleConsoleOk.bind(self),
+      okLabel: "Apply",
+      cancel: self.handleConsoleClose.bind(self),
+      cancelLabel: "Close",
+      body: out.join("")
+    });
+
+    // Wait for the prompt to get inserted then do stuff...
+    setTimeout(function() {
+      $("#modal-cancel").focus();
+
+      var ui = $("#qlhm_console");
+      ui
+        // Suppress backtick (99.999% intended for the QL console)
+        .on("keydown", function(ev) {
+          if (192 == ev.keyCode) ev.preventDefault();
+        })
+        .on("click", "#userscripts li", function() { self.showDetails(this); })
+        .on("click", ".selectall", function () { ui.find(":checkbox").prop("checked", true); })
+        .on("click", ".unselectall", function () { ui.find(":checkbox").prop("checked", false); })
+        .on("click", ".deleteunsel", function() {
+           ui.find(":checkbox").each(function(index, item) {
+             var $item = $(item);
+             if (!$item.prop("checked") && !$item.parent().find("a").hasClass("notInstalled")) {
+               $item.closest("li").data("toDelete", true).find("label").addClass("strike");               
+             }
+             self.showDetails();
+           });
+        })
         ;
-      if ($item.data("toDelete")) {
-        $item.data("toDelete", false).find("label").removeClass("strike");
-        $this.text("[DELETE]");
-        console.log("final result will be to NOT delete " + id);
+    }, 0);
+  };
+
+  HudManager.prototype.showDetails = function(elem) {
+    var self = this;
+    var $details = $("#scriptDetails");
+
+    $("#userscripts li").removeClass("selected");
+    $details.empty();
+    if (!elem) {
+      if (self.selectedScriptElement && $(self.selectedScriptElement).length > 0)
+        elem = self.selectedScriptElement;
+      else {
+        $details.append("(click on a script to see the details)");
+        self.selectedScriptElement = null;
+        return;
       }
+    }
+
+    var $this = $(elem), id = $this.closest("li").data("id");
+    var cacheScript = storage.scripts.cache[id];
+    var author, version, descr, deleteCaption;    
+
+    self.selectedScriptElement = elem;
+    $this.addClass("selected");
+
+    if (cacheScript) {
+      author = cacheScript.headers.author;
+      version = cacheScript.headers.version;
+      descr = e(cacheScript.headers.description);
+      deleteCaption = $("#userscript"+id).data("toDelete") ? "UNDELETE" : "DELETE";
+    }
+    else {
+      var repoScript = $.grep(HOOK_MANAGER.userscriptRepository, function(item) { return item.id == id; })[0];
+      author = repoScript.author;
+      version = "not installed";
+      descr = repoScript.note ? "NOTE:<br>" + repoScript.note : "";
+      deleteCaption = "";
+    }
+    
+    $details.append("<div class='table'>"
+      + "<div class='row'>"
+      + "<div class='cell'>ID:</div>"
+      + "<div class='cell'><a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + id + "</a></div>"
+      + "</div>"
+      + "<div class='row'><div class='cell'>Author:</div><div class='cell'>" + author + "</div></div>"
+      + "<div class='row'><div class='cell'>Version:</div><div class='cell'>" + version + "</div></div>"
+      + "</div>"    
+      + "<br><p>" + descr + "</p>"
+    );
+    if (cacheScript) {
+      $details.append("<br>"
+        + "<a href='javascript:void(0)' data-id='" + id + "' class='del'>[" + deleteCaption + "]</a>"
+        + " &nbsp; <a href='javascript:void(0)' data-id='" + id + "' class='viewSource'>[SOURCE]</a><br>"
+      );
+    }
+    $details.find(".viewSource").click(function() {
+      // Open a prompt to show the selected userscript's source       
+      self.showSource($(this).data("id"));
+    });
+    $details.find(".del").click(function() {
+      // Toggle a userscript being marked as deleted
+      var id = $(this).data("id");
+      var $item = $("#userscript" + id);
+      var toDelete = $item.data("toDelete");
+      if (toDelete) {
+        $item.data("toDelete", false).find("label").removeClass("strike");
+        $(this).text("[DELETE]");
+      } 
       else {
         $item.data("toDelete", true).find("label").addClass("strike");
-        $this.text("[UNDELETE]");
-        console.log("final result will be to delete " + id);
+        $(this).text("[UNDELETE]");
       }
     });
-
-    self.addRepositoryScripts();
-  }, 0);
-}
-
-HudManager.prototype.showSource = function(aScriptID) {
+  };
+  
+  HudManager.prototype.showSource = function(aScriptID) {
   var self = this;
   qlPrompt({
       id: "qlhmSource"
+    , title: "Script Source Code: " +aScriptID
     , alert: true
     , customWidth: self.width - 100
-    , body: "<p><b>NOTE:</b> Currently read-only</p>"
-          + "<textarea class='userscript-source' rows='8'>" + self.hm.getUserScriptSource(aScriptID) + "</textarea>"
+    , customHeight: 850
+    , body: "<b>NOTE:</b> Currently read-only</p>"
+          + "<textarea class='userscript-source' rows='30'>" + self.hm.getUserScriptSource(aScriptID) + "</textarea>"
   });
-  // Remove the title bar... looks better without
-  setTimeout(function() {
-    $("#qlhmSource").find(".modal-title").remove();
-  }, 0);
-}
-
-HudManager.prototype.addRepositoryScripts = function() {
-  var self = this;
-  
-  var $repo = $("#userscriptsRepository");
-  $repo.empty();
-  $.each(HOOK_MANAGER.userscriptRepository, function(i, scriptInfo) {
-    if (storage.scripts.available.indexOf(scriptInfo.id) === -1) {
-      $repo.append(self.scriptRowFromScriptRepository(scriptInfo));
-    }
-  });    
 }
 
 HudManager.prototype.handleConsoleOk = function() {
@@ -327,21 +400,50 @@ HudManager.prototype.handleConsoleOk = function() {
     , $con = $("#qlhm_console")
     , $uNew = $con.find("input.userscript-new")
     , ids = $uNew.val()
-    , updateRepository = false
     ;
 
-  ids = ids.replace(/https:\/\/userscripts\.org\/scripts\/[a-z]+\//g, "").replace(/[^\d,]/g, "");
-  ids = ids.split(",").map(function(id) { return parseInt(id.trim()); });
-
-  $con.find("input.userscript-add").each(function() {
+  // delete or disable scripts
+  $con.find("input.userscript-state").each(function() {
     var $input = $(this)
       , $item = $input.closest("li")
       , id = parseInt($item.data("id"))
       ;
 
-    if ($input.prop("checked")) {
+    // Should this userscript be deleted
+    if ($item.data("toDelete")) {
+      if (storage.scripts.enabled.indexOf(id) !== -1) {
+        webReloadRequired = true;
+      }
+      self.hm.removeUserScript(id);
+      // only remove non-repository scripts from UI
+      if ($.grep(HOOK_MANAGER.userscriptRepository, function(item) { return item.id == id; }).length == 0)
+        $item.remove();
+      else {
+        $item.find("label").removeClass("strike");
+        $item.find("a").addClass("notInstalled");
+      }
+      $input.attr("checked", false);
+      $item.data("toDelete", false);
+    }
+    // ... otherwise just check if disabled or enabled
+    else if (self.hm.hasUserScript(id)) {
+      webReloadRequired |= self.hm.toggleUserScript(id, $input.prop("checked"));
+    }
+  });
+
+  // add new scripts
+  ids = ids.replace(/https:\/\/userscripts\.org\/scripts\/[a-z]+\//g, "").replace(/[^\d,]/g, "");
+  ids = ids.split(",").map(function(id) { return parseInt(id.trim()); });
+
+  $con.find("input.userscript-state").each(function() {
+    var $input = $(this)
+      , $item = $input.closest("li")
+      , id = parseInt($item.data("id"))
+      ;
+
+    if ($input.prop("checked") && !self.hm.hasUserScript(id)) {            
       ids.push(id);
-      $item.remove();
+      $item.find("a").removeClass("notInstalled");
     }
   });
 
@@ -355,7 +457,8 @@ HudManager.prototype.handleConsoleOk = function() {
         console.log("Trying to fetch userscript with ID '" + id + "'");
         self.hm.fetchScript(id, function(aScript) {
           // TODO: manage the userscript list better... this won't necessarily be in the correct position
-          $con.find("#userscripts").append(self.scriptRowFromScript(aScript));
+          if ($("#userscript" + id).length == 0)
+            $con.find("#userscripts").append(self.scriptRowFromScript(aScript));
         });
       }
     }
@@ -363,36 +466,14 @@ HudManager.prototype.handleConsoleOk = function() {
 
   $uNew.val("");
 
-  // Check userscript states
-  $con.find("input.userscript-state").each(function() {
-    var $input = $(this)
-      , $item = $input.closest("li")
-      , id = parseInt($item.data("id"))
-      ;
-
-    // Should this userscript be deleted
-    if ($item.data("toDelete")) {
-      if (storage.scripts.enabled.indexOf(id) !== -1) {
-        webReloadRequired = true;
-      }
-      self.hm.removeUserScript(id);
-      $item.remove();
-      updateRepository = true;
-    }
-    // ... otherwise just check if disabled or enabled
-    else {
-      webReloadRequired |= self.hm.toggleUserScript(id, $input.prop("checked"));
-    }
-  });
   
-  if (updateRepository) {
-    self.addRepositoryScripts();
-  }
-
   if (webReloadRequired) {
     //$("#modal-buttons").append("<span style='color:#c00000; font-size: 12pt'> ... and reload website</span>");
     $("#modal-cancel").prop("value", "Restart");
   }
+
+  // give a new script some time to load before updating the details
+  window.setTimeout(function() { self.showDetails(); }, 500);
 }
 
 HudManager.prototype.handleConsoleClose = function() {
