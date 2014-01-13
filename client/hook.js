@@ -345,7 +345,7 @@ HudManager.prototype.showDetails = function(elem) {
     var repoScript = $.grep(HOOK_MANAGER.userscriptRepository, function(item) { return item.id == id; })[0];
     author = repoScript.author;
     version = "<i>not installed</i>";
-    descr = repoScript.note ? "<b>NOTE:</b><br>" + repoScript.note : "";
+    descr = repoScript.note ? ("<b>NOTE:</b><br>" + repoScript.note) : "";
     entrySource = "QLHM Repository";
     deleteCaption = "";
   }
@@ -359,14 +359,16 @@ HudManager.prototype.showDetails = function(elem) {
     + "<div class='row'><div class='cell'><b>Version:</b></div><div class='cell'>" + version + "</div></div>"
     + "<div class='row'><div class='cell'><b>Listed Due To:</b></div><div class='cell'>" + entrySource + "</div></div>"
     + "</div>"    
-    + "<br><p>" + descr + "</p>"
+    + "<br>" + (descr ? ("<p>" + descr + "</p><br>") : "")
   );
 
   if (cacheScript) {
-    $details.append("<br>"
-      + "<a href='javascript:void(0)' data-id='" + id + "' class='del'>[" + deleteCaption + "]</a>"
-      + " &nbsp; <a href='javascript:void(0)' data-id='" + id + "' class='viewSource'>[SOURCE]</a><br>"
+    $details.append("<a href='javascript:void(0)' data-id='" + id + "' class='del'>[" + deleteCaption + "]</a>"
+      + " &nbsp; <a href='javascript:void(0)' data-id='" + id + "' class='viewSource'>[SOURCE]</a>"
     );
+  }
+  else {
+    $details.append("<span class='italic'>Mark the checkbox and hit \"Apply\" to install.</span>");
   }
 
   $details.find(".viewSource").click(function() {
