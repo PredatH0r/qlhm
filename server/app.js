@@ -31,7 +31,7 @@ function updateMetaTimes(aScript, aNextMinutes) {
 }
 
 // The latest "hook.js" version
-var LATEST_CLIENT_VERSION = 0.2
+var LATEST_CLIENT_VERSION = 0.3
   , LATEST_CLIENT_DOWNLOAD_URL = "https://github.com/supahgreg/qlhm/wiki/Version-History"
   ;
 
