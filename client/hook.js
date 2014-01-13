@@ -159,6 +159,7 @@ HudManager.prototype.injectMenuEntry = function() {
       "#hooka { position: relative; bottom: 20px; left: 10px; z-index: 99999; font-weight: bold; padding: 2px; text-shadow: 0 0 10px #000; }"
     , "#hooka:hover { cursor: pointer; text-shadow: 0 0 10px yellow; }"
     , "#qlhm_console { text-align: left !important; width: 100%; }"
+    , "#qlhm_console #detailspane { float: right; position: relative; top: 0px; width: 270px; }"
     , "#qlhm_console strong, #qlhm_console legend { font-weight: bold; }"
     , "#qlhm_console fieldset { margin: 10px 0 20px 0; padding: 5px; }"
     , "#qlhm_console ul { list-style: none; }"
@@ -166,7 +167,9 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console ul li.selected { background-color: #ffc; }"
     , "#qlhm_console input.userscript-new { width: 400px; margin-bottom: 5px; }"
     , "#qlhm_console a.del, #qlhm_console a.viewSource { text-decoration: none; }"
+    , "#qlhm_console .italic { font-style: italic; }"
     , "#qlhm_console .strike { text-decoration: line-through; }"
+    , "#qlhm_console .underline { text-decoration: underline; }"
     , "#qlhm_console .details { margin-left: 15px; font-size: smaller; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: " + (self.width - 50) + "px; }"
     , "#qlhm_console .table { display: table; }"
     , "#qlhm_console .row { display: table-row; }"
@@ -197,7 +200,7 @@ HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state'>"
        + " <label for='userscript" + id + "'>"
-       + "<a class='notInstalled' style='text-style:italic' href='javascript:void(0)' target='_empty'>" + e(aScriptInfo.name) + "</a></label>"
+       + "<a class='notInstalled italic' href='javascript:void(0)' target='_empty'>" + e(aScriptInfo.name) + "</a></label>"
        + "</li>";
 }
 
@@ -236,12 +239,12 @@ HudManager.prototype.onRepositoryLoaded = function() {
   out.push("<div id='qlhm_console'>");
   out.push("<fieldset>");
   out.push("<b>Add Scripts:</b>");
-  out.push(" &nbsp; <input type='text' class='userscript-new' placeholder='Enter userscripts.org script IDs directly -or- select from below'>");
+  out.push(" &nbsp; <input type='text' class='userscript-new' placeholder='Enter userscripts.org (USO) script IDs directly -or- select from below'>");
   out.push("<div>");
   out.push("</fieldset>");
 
-  out.push("<div style='float:right; position: relative; top: 0px; width: 270px'>");
-  out.push("<b>Script Details</b>");
+  out.push("<div id='detailspane'>");
+  out.push("<b class='underline'>Script Details</b>");
   out.push("<div id='scriptDetails'>(click on a script to see the details)</div>");
   out.push("</div>");
 
@@ -315,7 +318,7 @@ HudManager.prototype.showDetails = function(elem) {
       elem = self.selectedScriptElement;
     }
     else {
-      $details.append("(click on a script to see the details)");
+      $details.append("(click on a script to see its details)");
       self.selectedScriptElement = null;
       return;
     }
@@ -326,7 +329,7 @@ HudManager.prototype.showDetails = function(elem) {
     , cacheScript = storage.scripts.cache[id]
     ;
 
-  var author, version, descr, deleteCaption;    
+  var author, version, descr, entrySource, deleteCaption;    
 
   self.selectedScriptElement = elem;
   $elem.addClass("selected");
@@ -335,23 +338,26 @@ HudManager.prototype.showDetails = function(elem) {
     author = e(cacheScript.headers.author);
     version = e(cacheScript.headers.version);
     descr = e(cacheScript.headers.description);
+    entrySource = "User Installation";
     deleteCaption = $("#userscript"+id).data("toDelete") ? "UNDELETE" : "DELETE";
   }
   else {
     var repoScript = $.grep(HOOK_MANAGER.userscriptRepository, function(item) { return item.id == id; })[0];
     author = repoScript.author;
-    version = "not installed";
-    descr = repoScript.note ? "NOTE:<br>" + repoScript.note : "";
+    version = "<i>not installed</i>";
+    descr = repoScript.note ? "<b>NOTE:</b><br>" + repoScript.note : "";
+    entrySource = "QLHM Repository";
     deleteCaption = "";
   }
 
   $details.append("<div class='table'>"
     + "<div class='row'>"
-    + "<div class='cell'>ID:</div>"
+    + "<div class='cell'><b>USO ID:</b></div>"
     + "<div class='cell'><a href='https://userscripts.org/scripts/show/" + id + "' target='_empty'>" + id + "</a></div>"
     + "</div>"
-    + "<div class='row'><div class='cell'>Author:</div><div class='cell'>" + author + "</div></div>"
-    + "<div class='row'><div class='cell'>Version:</div><div class='cell'>" + version + "</div></div>"
+    + "<div class='row'><div class='cell'><b>Author:</b></div><div class='cell'>" + author + "</div></div>"
+    + "<div class='row'><div class='cell'><b>Version:</b></div><div class='cell'>" + version + "</div></div>"
+    + "<div class='row'><div class='cell'><b>Listed Due To:</b></div><div class='cell'>" + entrySource + "</div></div>"
     + "</div>"    
     + "<br><p>" + descr + "</p>"
   );
