@@ -37,7 +37,8 @@ issues and breaking changes.
 2. Open the QUAKE LIVE standalone client
 3. Click on the QLHM "HOOK" menu (to the lower-left of the QUAKE LIVE logo)
 4. Under the "New" section enter the [userscripts.org](http://userscripts.org) script ID (the number in the URL)
-or a comma-delimited list of script IDs and click "Save".
+or a comma-delimited list of script IDs and click "Apply".
+  * Alternatively, check the desired boxes in the provided userscript list and click "Apply".
 
 **TIP:** To install [QLRanks.com Display](https://userscripts.org/scripts/show/111519) (111519),
 [Quake Live Stream Notifier](https://userscripts.org/scripts/show/114449) (114449),
