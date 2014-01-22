@@ -45,7 +45,7 @@ uso.getMeta = function(aID, aCallback) {
 }
 
 /**
- * Try to retrieve and parse a userscripts.org meta file
+ * Try to retrieve and parse a userscripts.org script file
  */
 uso.getScript = function(aID, aCallback) {
   aCallback = aCallback ? aCallback : DOLITTLE;
