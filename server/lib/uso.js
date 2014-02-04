@@ -38,8 +38,8 @@ uso.getMeta = function(aID, aCallback) {
   var url = util.format(meta.str, aID);
 
   request({url: url, timeout: 10E3}, function(usoError, usoResponse, usoBody) {
-    if (404 === usoResponse.statusCode) return aCallback(404);
     if (usoError) return aCallback(usoError);
+    if (200 !== usoResponse.statusCode) return aCallback(usoResponse.statusCode);
     aCallback(null, Scriptish_parser(usoBody));
   });
 }
@@ -52,8 +52,8 @@ uso.getScript = function(aID, aCallback) {
   var url = util.format(script.str, aID);
 
   request({url: url, timeout: 10E3}, function(usoError, usoResponse, usoBody) {
-    if (404 === usoResponse.statusCode) return aCallback(404);
     if (usoError) return aCallback(usoError);
+    if (200 !== usoResponse.statusCode) return aCallback(usoResponse.statusCode);
     aCallback(null, {headers: Scriptish_parser(usoBody), content: usoBody});
   });
 }
