@@ -1,6 +1,6 @@
 ﻿HOOK_MANAGER.userscriptRepository = [
   { id: 120117, author: "aiken", name: "QL Gametype Switcher" },
-  { id: 111519, author: "wn", name: "QLRanks.com Display" },
+  { id: 111519, author: "wn", name: "QLRanks.com Display", note: "Click <a href='https://userscripts.org/scripts/show/111519'>here</a> for in-game instructions" },
   { id: 188803, author: "PredatH0r", name: "Quake Live Alternative Menu (QLHM Edition)", note: "When installed, <i>Overlapping Menu Fix</i> is not needed" },  
   { id: 186664, author: "PredatH0r", name: "Quake Live Auto Invite (QLHM Edition)" },
   { id: 113249, author: "wn", name: "Quake Live Better Profile Jumper" },
