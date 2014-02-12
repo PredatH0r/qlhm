@@ -359,7 +359,7 @@ HudManager.prototype.showDetails = function(elem) {
   $details.empty();
 
   if (!elem) {
-    if (self.selectedScriptElement && $(self.selectedScriptElement).length > 0) {
+    if (self.selectedScriptElement && $(self.selectedScriptElement).length) {
       elem = self.selectedScriptElement;
     }
     else {
@@ -721,7 +721,7 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
 }
 
 HookManager.prototype.injectUserScript = function(aScript) {
-  console.log("^7Loading userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
+  console.log("^7Injecting userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
   injectScript(";(function() {" + aScript.content + "})();");
 }
 
