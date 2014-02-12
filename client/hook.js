@@ -126,7 +126,7 @@ function HudManager(aHookManager) {
   readOnly(this, "hm", aHookManager);
   readOnly(this, "width", 900);
   this.selectedScriptElement = null;
-  
+
   quakelive.AddHook("OnLayoutLoaded", this.OnLayoutLoaded.bind(this));
 
   // 2013-11-23 window.alert is currently unhandled... remove this if native (i.e. non-JS) option
@@ -271,7 +271,7 @@ HudManager.prototype.showConsole = function() {
     if (storage.scripts.available.indexOf(script.id) == -1)
       scripts.push(script);
   });
-  
+
   scripts.sort(function(a, b) {
     var x = a.headers ? a.headers.name[0] : a.name;
     var y = b.headers ? b.headers.name[0] : b.name;
@@ -311,7 +311,7 @@ HudManager.prototype.showConsole = function() {
   out.push("</ul>");
   out.push("</fieldset>");
   out.push("</div>");
-  
+
   out.push("</div>");
 
   // Inject the console
@@ -342,7 +342,7 @@ HudManager.prototype.showConsole = function() {
           $ui.find(":checkbox").each(function(index, item) {
             var $item = $(item);
             if (!$item.prop("checked") && !$item.parent().find("a").hasClass("notInstalled")) {
-              $item.closest("li").data("toDelete", true).find("label").addClass("strike");               
+              $item.closest("li").data("toDelete", true).find("label").addClass("strike");
             }
             self.showDetails();
           });
@@ -374,7 +374,7 @@ HudManager.prototype.showDetails = function(elem) {
     , cacheScript = storage.scripts.cache[id]
     ;
 
-  var author, version, descr, entrySource, deleteCaption;    
+  var author, version, descr, entrySource, deleteCaption;
 
   self.selectedScriptElement = elem;
   $elem.addClass("selected");
@@ -403,7 +403,7 @@ HudManager.prototype.showDetails = function(elem) {
     + "<div class='row'><div class='cell'><b>Author:</b></div><div class='cell'>" + author + "</div></div>"
     + "<div class='row'><div class='cell'><b>Version:</b></div><div class='cell'>" + version + "</div></div>"
     + "<div class='row'><div class='cell'><b>Listed Due To:</b></div><div class='cell'>" + entrySource + "</div></div>"
-    + "</div>"    
+    + "</div>"
     + "<br>" + (descr ? ("<p>" + descr + "</p><br>") : "")
   );
 
@@ -417,7 +417,7 @@ HudManager.prototype.showDetails = function(elem) {
   }
 
   $details.find(".viewSource").click(function() {
-    // Open a prompt to show the selected userscript's source       
+    // Open a prompt to show the selected userscript's source
     self.showSource($(this).data("id"));
   });
 
@@ -432,7 +432,7 @@ HudManager.prototype.showDetails = function(elem) {
     if (toDelete) {
       $item.data("toDelete", false).find("label").removeClass("strike");
       $this.text("[DELETE]");
-    } 
+    }
     else {
       $item.data("toDelete", true).find("label").addClass("strike");
       $this.text("[UNDELETE]");
@@ -503,7 +503,7 @@ HudManager.prototype.handleConsoleOk = function() {
       , id = parseInt($item.data("id"))
       ;
 
-    if ($input.prop("checked") && !self.hm.hasUserScript(id)) {            
+    if ($input.prop("checked") && !self.hm.hasUserScript(id)) {
       ids.push(id);
     }
   });
@@ -531,7 +531,7 @@ HudManager.prototype.handleConsoleOk = function() {
 
   $uNew.val("");
 
-  
+
   if (webReloadRequired) {
     //$("#modal-buttons").append("<span style='color:#c00000; font-size: 12pt'> ... and reload website</span>");
     $("#modal-cancel").prop("value", "Restart");
@@ -543,10 +543,10 @@ HudManager.prototype.handleConsoleOk = function() {
 HudManager.prototype.handleConsoleClose = function() {
   if (webReloadRequired) {
     qz_instance.SendGameCommand("web_reload");
-  } 
+  }
   else {
     $("#qlhmPrompt").jqmHide();
-  }  
+  }
 }
 
 /**
