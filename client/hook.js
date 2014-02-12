@@ -80,7 +80,7 @@ function injectStyle(aStyle) {
 function injectScript(aScript) {
   var s = document.createElement("script");
   s.type = "text/javascript";
-  s.innerHTML = aScript;
+  s.innerHTML = Array.isArray(aScript) ? aScript.join("") : aScript;
   document.body.appendChild(s);
   document.body.removeChild(s);
 }
