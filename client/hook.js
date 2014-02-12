@@ -1,6 +1,6 @@
 /**
  * QUAKE LIVE HOOK MANAGER
- * Version: 0.3
+ * Version: 0.4pre
  */
 
 // called in ql.Init
@@ -557,7 +557,7 @@ HudManager.prototype.handleConsoleClose = function() {
  */
 function HookManager(aProps) {
   readOnly(this, "name", "Quake Live Hook Manager");
-  readOnly(this, "version", 0.3);
+  readOnly(this, "version", 0.4);
   readOnly(this, "debug", !!aProps.debug);
 }
 
