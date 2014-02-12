@@ -18,7 +18,7 @@ function main_hook() {
 var config = {
     BASE_URL: "http://qlhm.phob.net/"
   , manual: []
-  , debug: false
+  , debug: true
 };
 
 // !!!
@@ -447,8 +447,12 @@ HudManager.prototype.showSource = function(aScriptID) {
     , customWidth: self.width - 100
     , customHeight: 850
     , body: "<b>NOTE:</b> Currently read-only</p>"
-          + "<textarea class='userscript-source' rows='30'>" + self.hm.getUserScriptSource(aScriptID) + "</textarea>"
+          + "<textarea class='userscript-source' rows='30'></textarea>"
   });
+
+  setTimeout(function() {
+    $("#qlhmSource .userscript-source").text(self.hm.getUserScriptSource(aScriptID))
+  }, 0);
 }
 
 HudManager.prototype.handleConsoleOk = function() {
