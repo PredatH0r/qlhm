@@ -18,7 +18,7 @@ function main_hook() {
 var config = {
     BASE_URL: "http://qlhm.phob.net/"
   , manual: []
-  , debug: true
+  , debug: false
 };
 
 // !!!
@@ -370,6 +370,7 @@ HudManager.prototype.showDetails = function(elem) {
   var $elem = $(elem)
     , id = $elem.closest("li").data("id")
     , cacheScript = storage.scripts.cache[id]
+    , repoScript = $.grep(HOOK_MANAGER.userscriptRepository, function(item) { return item.id == id; })[0]
     ;
 
   var author, version, descr, entrySource, deleteCaption;
@@ -385,13 +386,16 @@ HudManager.prototype.showDetails = function(elem) {
     deleteCaption = $("#userscript"+id).data("toDelete") ? "UNDELETE" : "DELETE";
   }
   else {
-    var repoScript = $.grep(HOOK_MANAGER.userscriptRepository, function(item) { return item.id == id; })[0];
     author = repoScript.author;
     version = "<i>not installed</i>";
-    descr = repoScript.note ? ("<b>NOTE:</b><br>" + repoScript.note) : "";
+    descr = "";
     entrySource = "QLHM Repository";
     deleteCaption = "";
   }
+
+  // Always add the repository note if available
+  if (repoScript && repoScript.note)
+    descr = descr + (!descr ? "" : "<br><br>") + "<b>QLHM NOTE:</b><br>" + repoScript.note;
 
   $details.append("<div class='table'>"
     + "<div class='row'>"
