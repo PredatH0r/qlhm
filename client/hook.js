@@ -147,18 +147,29 @@ HudManager.prototype.alert = function(aOptions) {
 HudManager.prototype.OnLayoutLoaded = function() {
   var layout = quakelive.activeModule ? quakelive.activeModule.GetLayout() : "";
   // Proper layout and no existing menu?
-  if ("bare" !== layout && "postlogin_bare" !== layout && !$("#hooka").length) {
+  if ("bare" !== layout && "postlogin_bare" !== layout && !$("#qlhm_nav,#hooka").length) {
     this.injectMenuEntry();
   }
+}
+
+HudManager.prototype.rebuildNav = function() {
+  // Generate script command submenu
+  // TODO: allow scripts to register/unregister commands
+  nav.navbar["Hook"].submenu["Script Options"].submenu = {"None defined": {class: "qlhm_noHref", href: ""}, "": SUBMENU_END}
+
+  // Rebuild the navbar
+  nav.initNav({
+      location: "#newnav_top"
+    , supernav_id: "topNav"
+    , object: nav.navbar
+  });
 }
 
 HudManager.prototype.injectMenuEntry = function() {
   var self = this;
 
   injectStyle([
-      "#hooka { position: relative; bottom: 20px; left: 10px; z-index: 99999; font-weight: bold; padding: 2px; text-shadow: 0 0 10px #000; }"
-    , "#hooka:hover { cursor: pointer; text-shadow: 0 0 10px yellow; }"
-    , "#qlhm_console { text-align: left !important; width: 100%; }"
+      "#qlhm_console { text-align: left !important; width: 100%; }"
     , "#qlhm_console #detailspane { float: right; position: relative; top: 0px; width: 270px; }"
     , "#qlhm_console strong, #qlhm_console legend { font-weight: bold; }"
     , "#qlhm_console fieldset { margin: 10px 0 20px 0; padding: 5px; }"
@@ -179,7 +190,44 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhmSource textarea.userscript-source { width: " + (self.width - 140) + "px; }"
   ]);
 
-  $("#qlv_mainLogo").append($("<a id='hooka'>HOOK</a>").click(function() { self.showConsole.call(self); return false; }));
+  // New...
+  if ($("#tn_exit").length) {
+    injectStyle("#qlhm_nav { float: left; }");
+
+    nav.navbar["Hook"] = {
+        id: "qlhm_nav"
+      , href: ""
+      , submenu: {
+            "Script Management": {id: "qlhm_nav_scriptMgmt", class: "qlhm_noHref", href: ""}
+          , "Script Options": {
+                id: "qlhm_nav_scriptOpts"
+              , class: "qlhm_noHref"
+              , href: ""
+            }
+          , "": SUBMENU_END
+        }
+    }
+
+    // Override nav.initNav to do post-init stuff for QLHM
+    var oldInitNav = nav.initNav;
+    nav.initNav = function() {
+      oldInitNav.apply(nav, arguments);
+
+      // QLHM-specific stuff
+      $("#qlhm_nav").on("click", ".qlhm_noHref", function() { return false });
+      $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function() { self.showConsole.call(self); return false; });
+    }
+
+    self.rebuildNav();
+  }
+  // ... or old? (TODO: remove eventually)
+  else {
+    injectStyle([
+        "#hooka { position: relative; bottom: 20px; left: 10px; z-index: 99999; font-weight: bold; padding: 2px; text-shadow: 0 0 10px #000; }"
+      , "#hooka:hover { cursor: pointer; text-shadow: 0 0 10px yellow; }"
+    ]);
+    $("#qlv_mainLogo").append($("<a id='hooka'>HOOK</a>").click(function() { self.showConsole.call(self); return false; }));
+  }
 }
 
 HudManager.prototype.scriptRowFromScript = function(aScript) {
