@@ -215,7 +215,7 @@ HudManager.prototype.injectMenuEntry = function() {
 
       // QLHM-specific stuff
       $("#qlhm_nav").on("click", ".qlhm_noHref", function() { return false });
-      $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function() { self.showConsole.call(self); return false; });
+      $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function() { self.loadRepository.call(self); return false; });
     }
 
     self.rebuildNav();
@@ -226,7 +226,7 @@ HudManager.prototype.injectMenuEntry = function() {
         "#hooka { position: relative; bottom: 20px; left: 10px; z-index: 99999; font-weight: bold; padding: 2px; text-shadow: 0 0 10px #000; }"
       , "#hooka:hover { cursor: pointer; text-shadow: 0 0 10px yellow; }"
     ]);
-    $("#qlv_mainLogo").append($("<a id='hooka'>HOOK</a>").click(function() { self.showConsole.call(self); return false; }));
+    $("#qlv_mainLogo").append($("<a id='hooka'>HOOK</a>").click(function() { self.loadRepository.call(self); return false; }));
   }
 }
 
@@ -252,15 +252,12 @@ HudManager.prototype.scriptRowFromScriptRepository = function(aScriptInfo) {
        + "</li>";
 }
 
-HudManager.prototype.showConsole = function() {
+HudManager.prototype.loadRepository = function() {
   var self = this;
-
-  $.getScript(USERSCRIPT_REPOSITORY_URL)
-    .done(function() { self.onRepositoryLoaded(); })
-    .fail(function() { self.onRepositoryLoaded(); });    
+  $.getScript(USERSCRIPT_REPOSITORY_URL).always(function() { self.showConsole.call(self) });
 }
 
-HudManager.prototype.onRepositoryLoaded = function() {
+HudManager.prototype.showConsole = function() {
   var self = this;
 
   webReloadRequired = false;
