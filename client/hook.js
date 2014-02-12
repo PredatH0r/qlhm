@@ -129,12 +129,10 @@ function HudManager(aHookManager) {
 
   quakelive.AddHook("OnLayoutLoaded", this.OnLayoutLoaded.bind(this));
 
-  // 2013-11-23 window.alert is currently unhandled... remove this if native (i.e. non-JS) option
-  // is enabled.
-  if ("function alert() { [native code] }" != (aWin.alert+"")) {
-    aWin.alert = function(aMsg) {
-      console.log("ALERT: " + aMsg);
-    }
+  // window.alert is currently unhandled... remove this if a better option is enabled.
+  if ("function alert() { [native code] }" === (aWin.alert+"")) {
+    var self = this;
+    aWin.alert = function(aMsg) { self.alert.call(self, {title: "ALERT!", body: aMsg}) };
   }
 }
 
