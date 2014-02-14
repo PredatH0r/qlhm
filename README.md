@@ -43,8 +43,7 @@ or a comma-delimited list of script IDs and click "Apply".
 **TIP:** To install [QLRanks.com Display](https://userscripts.org/scripts/show/111519) (111519),
 [Quake Live Stream Notifier](https://userscripts.org/scripts/show/114449) (114449),
 and [Quake Live New Alt Browser](https://userscripts.org/scripts/show/73076) (73076) in one go simply
-enter "111519,114449,73076" and click "Save".  Note that "Quake Live New Alt Browser" has not been made
-compatible yet.
+enter "111519,114449,73076" and click "Save".
 
 **NOTE:** The server-side app is running on wn's server.  If you'd prefer to run your own, feel free
 to modify `config.BASE_URL` in "hook.js".
