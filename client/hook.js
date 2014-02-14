@@ -598,7 +598,7 @@ HookManager.prototype.versionCheck = function() {
       });
     }
     else {
-      console.log("On the latest " + self.name + " client release");
+      console.log("On the latest (or newer) " + self.name + " client release");
     }
   });
 }
