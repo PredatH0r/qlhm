@@ -55,9 +55,7 @@ server.use(function(req, res, next) {
 // Routes
 server.get({path: "/versioncheck", version: "1.0.0"}, function(req, res, next) {
   var clientVer = parseFloat(req.params.currentVersion);
-  if (isNaN(clientVer) || clientVer == LATEST_CLIENT_VERSION) {
-    return res.send({});
-  }
+  if (!isNaN(clientVer) && clientVer >= LATEST_CLIENT_VERSION) return res.send({});
   res.send({"new": {version: LATEST_CLIENT_VERSION, url: LATEST_CLIENT_DOWNLOAD_URL}});
 });
 
