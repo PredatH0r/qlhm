@@ -5,7 +5,7 @@
 
 // called in ql.Init
 function main_hook() {
-  console.log("main_hook called");
+  qz_instance.SendGameCommand("echo main_hook called");
   if (quakelive.mod_legals !== quakelive.activeModule) HOOK_MANAGER.init();
 }
 
@@ -42,9 +42,25 @@ var webReloadRequired = false;
 // Local reference to jQuery (set during initialization)
 var $;
 
+
 /**
  * Helpers
  */
+function log() {
+  var args = Array.prototype.slice.call(arguments);
+  if (!args.length) return;
+  if (console.firebuglite) console.log.apply(console, args);
+  qz_instance.SendGameCommand("echo " + (1 == args.length ? args[0] : JSON.stringify(args)));
+}
+
+function debug() {
+  if (!config.debug) return;
+  var args = Array.prototype.slice.call(arguments);
+  if (!args.length) return;
+  if (console.firebuglite) console.debug.apply(console, args);
+  qz_instance.SendGameCommand("echo DEBUG: " + (1 == args.length ? args[0] : JSON.stringify(args)));
+}
+
 // Defines a read-only property on an object (enumerable by default)
 function readOnly(aObj, aProp, aVal, aEnum) {
   aEnum = undefined === aEnum ? true : !!aEnum;
@@ -94,7 +110,7 @@ readOnly(storage, "root", "qlhm");
 readOnly(storage, "init", function storageInit(aCallback, aForceReset) {
   var STORAGE_TEMPLATE = {settings: {}, scripts: {available: [], enabled: [], cache: {}}};
 
-  if (aForceReset) console.log("^1WARNING: ^7resetting QLHM localStorage");
+  if (aForceReset) log("^1WARNING: ^7resetting QLHM localStorage");
 
   if (!aForceReset && storage.root in localStorage) {
     try {
@@ -518,10 +534,10 @@ HudManager.prototype.handleConsoleOk = function() {
     // New userscript?
     if (id && !isNaN(id)) {
       if (self.hm.hasUserScript(id)) {
-        console.log("The userscript with ID " + id + " already exists.  Try removing it first.");
+        log("The userscript with ID " + id + " already exists.  Try removing it first.");
       }
       else {
-        console.log("Trying to fetch userscript with ID '" + id + "'");
+        log("Trying to fetch userscript with ID '" + id + "'");
         var $script = $("#userscript" + id);
         $script.find("a").removeClass("notInstalled");
         $script.find(":checkbox").prop("checked", true);
@@ -565,12 +581,12 @@ function HookManager(aProps) {
 }
 
 HookManager.prototype.init = function() {
-  console.log("^2Initializing " + this.name + " v" + this.version);
+  log("^2Initializing " + this.name + " v" + this.version);
 
   $ = aWin.jQuery;
 
   if (this.debug) {
-    console.debug("^3DEBUG ENABLED.  Press F12 to open Firebug Lite.");
+    debug("^3DEBUG ENABLED.  Press F12 to open Firebug Lite.");
     // Firebug Lite (F12 to open)
     $("body").append("<script type='text/javascript' src='https://getfirebug.com/firebug-lite.js'>");
   }
@@ -588,7 +604,7 @@ HookManager.prototype.versionCheck = function() {
     , dataType: "jsonp"
   }).done(function(data) {
     if (data.new) {
-      console.log("New version of " + self.name + " found: " + data.new.version);
+      log("New version of " + self.name + " found: " + data.new.version);
       var out = "A new version (" + data.new.version + ") of " + self.name + " is available @ <a href='"
               + data.new.url + "' target='_blank'>" + data.new.url + "</a>.<br><br>You will need to manually update your "
               + "\"hook.js\" file, which is currently at version " + self.version + ".";
@@ -598,7 +614,7 @@ HookManager.prototype.versionCheck = function() {
       });
     }
     else {
-      console.log("On the latest (or newer) " + self.name + " client release");
+      log("On the latest (or newer) " + self.name + " client release");
     }
   });
 }
@@ -615,19 +631,19 @@ HookManager.prototype.loadScripts = function() {
 
     // Serve from cache?
     if (USE_CACHE && script) {
-      console.log("^7Retrieving '^5" + script.headers.name[0] + "^7' (ID '^5" + scriptID + "^7') from cache");
+      log("^7Retrieving '^5" + script.headers.name[0] + "^7' (ID '^5" + scriptID + "^7') from cache");
       self.injectUserScript(script);
     }
     // ... or pull fresh data
     else {
-      console.log("^7Attempting fresh retrieval of script with ID '^5" + scriptID + "^7'");
+      log("^7Attempting fresh retrieval of script with ID '^5" + scriptID + "^7'");
       self.fetchScript(scriptID);
     }
   });
 
   // User-specified scripts
   $.each(config.manual, function(i, scriptURL) {
-    console.log("^7Attempting fresh retrieval of script with URL '^5" + scriptURL + "^7'");
+    log("^7Attempting fresh retrieval of script with URL '^5" + scriptURL + "^7'");
     $.ajax({
       url: scriptURL
     , dataType: "jsonp"
@@ -655,12 +671,12 @@ HookManager.prototype.fetchScript = function(aScriptID, aCB) {
 }
 
 HookManager.prototype.handleScriptSuccess = function(aData) {
-  console.log("^2Successfully retrieved script with ID '^5" + aData._meta.id + "^2' '^5" + aData.headers.name[0] + "^2'");
+  log("^2Successfully retrieved script with ID '^5" + aData._meta.id + "^2' '^5" + aData.headers.name[0] + "^2'");
   this.addUserScript(aData);
 }
 
 HookManager.prototype.handleScriptError = function(aScriptID, jqXHR, settings, err) {
-  console.log("^1Failed to retrieve script with ID '^5" + aScriptID + "^1' : ^7" + err);
+  log("^1Failed to retrieve script with ID '^5" + aScriptID + "^1' : ^7" + err);
 }
 
 HookManager.prototype.hasUserScript = function(aID) {
@@ -694,7 +710,7 @@ HookManager.prototype.removeUserScript = function(aID) {
 
   storage.save();
 
-  console.log("^7'^5" + name + "^7' has been removed, but you must restart QUAKE LIVE for the change to take effect.");
+  log("^7'^5" + name + "^7' has been removed, but you must restart QUAKE LIVE for the change to take effect.");
 
   return true;
 }
@@ -714,20 +730,20 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
     storage.scripts.enabled.push(aID);
     storage.save();
     this.injectUserScript(script);
-    console.log("^7'^5" + name + "^7' has been enabled and injected.  You might need to restarted QUAKE LIVE to get the expected behaviour.");
+    log("^7'^5" + name + "^7' has been enabled and injected.  You might need to restarted QUAKE LIVE to get the expected behaviour.");
     return false;
   }
   else if (!enable && -1 != enIndex) {
     storage.scripts.enabled.splice(enIndex, 1);
     storage.save();
-    console.log("^7'^5" + name + "^7' has been disabled, but you must restart QUAKE LIVE for the change to take effect.");
+    log("^7'^5" + name + "^7' has been disabled, but you must restart QUAKE LIVE for the change to take effect.");
     return true;
   }
   return false;
 }
 
 HookManager.prototype.injectUserScript = function(aScript) {
-  console.log("^7Injecting userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
+  log("^7Injecting userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
   injectScript(";(function() {" + aScript.content + "})();");
 }
 
