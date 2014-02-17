@@ -4,16 +4,11 @@ var util = require("util")
   , moment = require("moment")
   , restify = require("restify")
 
+  , logTime = require("./lib/logging").logTime
   , Scriptish_parser = require("./lib/scriptish").Scriptish_parser
   , uso = require("./lib/uso")
   , SCRIPT_CACHE = require("./lib/scriptcache")
   ;
-
-
-// Logging helper that adds a timestamp prefix
-function logTime() {
-  console.log("%s %s", moment().format(), util.format.apply(null, arguments));
-}
 
 
 // The latest "hook.js" version
