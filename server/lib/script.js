@@ -17,12 +17,15 @@ Script.prototype.updateCheckNeeded = function() {
   return !this.nextCheck || moment().isAfter(this.nextCheck);
 }
 
-Script.prototype.updateMetaTimes = function(aNextMinutes) {
-  this.nextCheck = moment().add("minutes", aNextMinutes);
+Script.prototype.updateMetaTimes = function(aDuration, aUnit) {
+  var now = moment()
+    , unit = "undefined" !== typeof aUnit ? aUnit : "minutes"
+    ;
+  this.nextCheck = moment(now).add(aDuration, unit);
   if (!this.isValid()) return;
-  this.meta.nextCheckMinutes = aNextMinutes;
-  this.meta.lastCheck = Date.now();
-  this.meta.lastCheckUTC = moment.utc().format();
+  this.meta.nextCheckMinutes = this.nextCheck.diff(now, "minutes");
+  this.meta.lastCheck = now.valueOf();
+  this.meta.lastCheckUTC = now.utc().format();
   this.meta.nextCheck = this.nextCheck.valueOf();
   this.meta.nextCheckUTC = this.nextCheck.utc();
 }
