@@ -19,5 +19,6 @@
   { id: 187322, author: "PredatH0r", name: "Quake Live Player Status (QLHM Edition)" },
   { id: 153714, author: "simonov", name: "Quake Live Speccing Helper" },
   { id: 114449, author: "wn", name: "Quake Live Stream Notifier" },
+  { id: 395655, author: "PredatH0r", name: "Quake Live ToolTip fix" },
   { id: 99947, author: "Sean Cline", name: "Quake Live Weighted Accuracy", note: "Works, but causes lots of error messages in QL console" },
 ];
