@@ -30,6 +30,11 @@ var config = {
         // How long to wait for USO to respond (in seconds)
       , timeoutSeconds: 10
     }
+
+    // Individuals trusted to remove cache entries (bad release cached, etc.)
+  , cacheMaintainers: {
+        /* "uniqueKey": "userDisplayName" */
+    }
 }
 
 module.exports = config;

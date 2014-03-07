@@ -66,6 +66,18 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
   var scriptID = uso.parseID(req.params[0]);
   if (!scriptID) return res.send(404, {error: "Invalid or missing options.  '/uso/[id_number]' and '/uso/[full_url_to_.user.js]' are accepted."});
 
+  // Remove from cache?
+  if ("remove" in req.query) {
+    if (req.query.remove in config.cacheMaintainers) {
+      logTime("User '%s' removed script cache item with ID %d", config.cacheMaintainers[req.query.remove], scriptID);
+      SCRIPT_CACHE.remove(scriptID);
+      return res.send(200, {removed: scriptID});
+    }
+    else {
+      logTime("Invalid 'remove' parameter passed for script %d", scriptID);
+    }
+  }
+
   // Get the cached script, or create an new entry if needed
   var script = SCRIPT_CACHE.get(scriptID, true);
 
