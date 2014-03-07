@@ -1,10 +1,21 @@
+// Try to get the config
+try {
+  var config = require("./config")
+}
+catch (e) {
+  console.log("Unable to find your config.\n"
+            + "If this is your first run, be sure to copy 'config.js.default' to 'config.js' "
+            + "and modify it as needed.");
+  process.exit(1);
+}
+
+
 // Dependencies
 var util = require("util")
 
   , moment = require("moment")
   , restify = require("restify")
 
-  , config = require("./config")
   , logTime = require("./lib/logging").logTime
   , Scriptish_parser = require("./lib/scriptish").Scriptish_parser
   , uso = require("./lib/uso")
