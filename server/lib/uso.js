@@ -1,6 +1,7 @@
 var request = require("request")
   , util = require("util")
 
+  , config = require("../config")
   , Scriptish_parser = require("./scriptish").Scriptish_parser
   ;
 
@@ -37,7 +38,7 @@ uso.getMeta = function(aID, aCallback) {
   aCallback = aCallback ? aCallback : DOLITTLE;
   var url = util.format(meta.str, aID);
 
-  request({url: url, timeout: 10E3}, function(usoError, usoResponse, usoBody) {
+  request({url: url, timeout: config.uso.timeoutSeconds * 1E3}, function(usoError, usoResponse, usoBody) {
     if (usoError) return aCallback(usoError);
     if (200 !== usoResponse.statusCode) return aCallback(usoResponse.statusCode);
     aCallback(null, Scriptish_parser(usoBody));
@@ -51,7 +52,7 @@ uso.getScript = function(aID, aCallback) {
   aCallback = aCallback ? aCallback : DOLITTLE;
   var url = util.format(script.str, aID);
 
-  request({url: url, timeout: 10E3}, function(usoError, usoResponse, usoBody) {
+  request({url: url, timeout: config.uso.timeoutSeconds * 1E3}, function(usoError, usoResponse, usoBody) {
     if (usoError) return aCallback(usoError);
     if (200 !== usoResponse.statusCode) return aCallback(usoResponse.statusCode);
     aCallback(null, {headers: Scriptish_parser(usoBody), content: usoBody});

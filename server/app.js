@@ -4,16 +4,11 @@ var util = require("util")
   , moment = require("moment")
   , restify = require("restify")
 
+  , config = require("./config")
   , logTime = require("./lib/logging").logTime
   , Scriptish_parser = require("./lib/scriptish").Scriptish_parser
   , uso = require("./lib/uso")
   , SCRIPT_CACHE = require("./lib/scriptcache")
-  ;
-
-
-// The latest "hook.js" version
-var LATEST_CLIENT_VERSION = 0.3
-  , LATEST_CLIENT_DOWNLOAD_URL = "https://github.com/supahgreg/qlhm/wiki/Version-History"
   ;
 
 
@@ -36,8 +31,8 @@ server.use(function(req, res, next) {
 // Routes
 server.get({path: "/versioncheck", version: "1.0.0"}, function(req, res, next) {
   var clientVer = parseFloat(req.params.currentVersion);
-  if (!isNaN(clientVer) && clientVer >= LATEST_CLIENT_VERSION) return res.send({});
-  res.send({"new": {version: LATEST_CLIENT_VERSION, url: LATEST_CLIENT_DOWNLOAD_URL}});
+  if (!isNaN(clientVer) && clientVer >= config.client.version) return res.send({});
+  res.send({"new": {version: config.client.version, url: config.client.download_url}});
 });
 
 server.get({path: "/serving", version: "1.0.0"}, function(req, res, next) {
@@ -85,14 +80,14 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
     uso.getMeta(scriptID, function(aError, aHeaders) {
       if (404 === aError) {
         logTime("404 received for script metadata %d", scriptID);
-        // Wait 60 minutes if USO said the metadata couldn't be found
-        script.updateMetaTimes(60);
+        // Wait if USO said the metadata couldn't be found
+        script.updateMetaTimes(config.uso.delay.META_NOT_FOUND);
         return res.send(404, {error: util.format("Metadata for script with ID %d was not found", scriptID)});
       }
       else if (aError) {
         logTime("Non-404 error for script metadata %d: %s", scriptID, aError);
-        // Wait 5 minutes if there was a non-404 error in retrieval
-        script.updateMetaTimes(5);
+        // Wait if there was a non-404 error in retrieval
+        script.updateMetaTimes(config.uso.delay.META_SERVER_ERROR);
 
         // Send the previous content if available
         if (script.isValid()) return res.send(script);
@@ -107,8 +102,8 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
       if (!script.isOlderThan(aHeaders["uso:version"][0])) {
         logTime("The cached version of script %d (\"%s\", \"uso:version\": %d) is the latest available.",
             scriptID, scriptName, aHeaders["uso:version"][0]);
-        // Wait 30 minutes for the next metadata check
-        script.updateMetaTimes(30);
+        // Wait for the next metadata check
+        script.updateMetaTimes(config.uso.delay.SCRIPT_IS_CURRENT);
         return res.send(script);
       }
       // Otherwise we need to send a new request...
@@ -126,14 +121,14 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
         uso.getScript(scriptID, function(aError, aResult) {
           if (404 === aError) {
             logTime("404 received for script %d", scriptID);
-            // Wait 60 minutes if USO said the script couldn't be found
-            script.updateMetaTimes(60);
+            // Wait if USO said the script couldn't be found
+            script.updateMetaTimes(config.uso.delay.SCRIPT_NOT_FOUND);
             return res.send(404, {error: util.format("Script with ID %d was not found", scriptID)});
           }
           else if (aError) {
             logTime("Non-404 error for script %d: %s", scriptID, aError);
-            // Wait 5 minutes if there was a non-404 error in retrieval
-            script.updateMetaTimes(5);
+            // Wait if there was a non-404 error in retrieval
+            script.updateMetaTimes(config.uso.delay.SCRIPT_SERVER_ERROR);
             // Send the previous content if available
             if (script.isValid()) return res.send(script);
             return res.send(404, {error: "Invalid script request"});
@@ -148,8 +143,8 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
           // Add in useful headers (starting with "uso:") from the initial metadata request
           for (var i in aHeaders) if (0 === i.indexOf("uso:")) script.meta[i] = aHeaders[i][0];
 
-          // Wait 30 minutes for the next metadata check
-          script.updateMetaTimes(30);
+          // Wait for the next metadata check
+          script.updateMetaTimes(config.uso.delay.SCRIPT_SUCCESS);
 
           res.send(script);
         });
@@ -167,7 +162,14 @@ server.get(/^\/((?!(?:serving|uso|versioncheck)).)*$/, restify.serveStatic({
 }));
 
 
+function listenCallback() {
+  logTime("%s listening at %s", server.name, server.url);
+}
+
 // Start listening
-server.listen(process.env.PORT || 8080, function() {
-  console.log("%s listening at %s", server.name, server.url);
-});
+if (config.listen.socket) {
+  server.listen(config.listen.socket, listenCallback);
+}
+else {
+  server.listen(config.listen.port || 8080, config.listen.hostname || "" /* INADDR_ANY */, listenCallback);
+}
