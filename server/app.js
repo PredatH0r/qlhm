@@ -31,7 +31,7 @@ var server = restify.createServer();
 
 // Middleware
 server.use(restify.acceptParser(server.acceptable));
-server.use(restify.queryParser());
+server.use(restify.queryParser({mapParams: false}));
 server.use(restify.jsonp());
 server.use(restify.gzipResponse());
 
