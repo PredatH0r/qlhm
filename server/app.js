@@ -3,7 +3,9 @@ try {
   var config = require("./config")
 }
 catch (e) {
-  console.log("Unable to find your config.\n"
+  if ("MODULE_NOT_FOUND" !== e.code) throw e;
+
+  console.error("Unable to find your config.\n"
             + "If this is your first run, be sure to copy 'config.js.default' to 'config.js' "
             + "and modify it as needed.");
   process.exit(1);
