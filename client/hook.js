@@ -11,10 +11,10 @@ function main_hook() {
 
 
 (function(aWin, undefined) {
-/**
- * IMPORTANT:  Unless you really know what you're doing, the "config" properties below should be all
- * you need to change in this file.
- */
+// !!!
+// IMPORTANT:  It is unlikely that you'll need to change anything in this file.  If you actually do,
+// it is probably only in the config object below.
+// !!!
 var config = {
     BASE_URL: "http://qlhm.phob.net/"
   , manual: []
