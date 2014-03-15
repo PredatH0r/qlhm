@@ -29,7 +29,7 @@ issues and breaking changes.
 * Good pull requests are welcome.  There is a lot to be done and rewritten.
 * [Report a bug](https://github.com/supahgreg/qlhm/issues), but check if it has already been reported.
 * Help others work through the many issues that are bound to occur using QLHM.
-* Join the QLHM IRC channel: [#qlhm](irc://irc.quakenet.org/qlhm) @ QuakeNet ([webchat](http://webchat.quakenet.org/?channels=qlhm))
+* Join the QLHM IRC channel: #qlhm @ irc.quakenet.org ([webchat](http://webchat.quakenet.org/?channels=qlhm))
 
 
 ## How to use
