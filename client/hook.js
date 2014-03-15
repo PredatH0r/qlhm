@@ -39,6 +39,9 @@ var USERSCRIPT_REPOSITORY_URL = config.BASE_URL + "qlhmUserscriptRepository.js";
 // This is used to indicate if /web_reload is required (e.g. scripts were enabled or disabled)
 var webReloadRequired = false;
 
+// Holds the caption->handler pairs for script menu items added through HOOK_MANAGER.AddMenuItem(...) 
+var scriptMenuItems = Array();
+
 // Local reference to jQuery (set during initialization)
 var $;
 
@@ -166,10 +169,22 @@ HudManager.prototype.OnLayoutLoaded = function() {
   }
 }
 
-HudManager.prototype.rebuildNav = function() {
+HudManager.prototype.AddMenuItem = function (caption, handler) {
+  scriptMenuItems[caption] = handler;
+}
+
+HudManager.prototype.OnMenuItemClicked = function (item) {
+  var caption = $(item).text();
+  var handler = scriptMenuItems[caption];
+  if (handler)
+    handler();
+}
+
+HudManager.prototype.rebuildNav = function () {
   // Generate script command submenu
-  // TODO: allow scripts to register/unregister commands
-  nav.navbar["Hook"].submenu["Script Options"].submenu = {"None defined": {class: "qlhm_noHref", href: ""}, "": SUBMENU_END}
+  for (var caption in scriptMenuItems) {
+    nav.navbar["Hook"].submenu[caption] = { class: "qlhm_nav_scriptMenuItem", callback: "" };
+  }
 
   // Rebuild the navbar
   nav.initNav({
@@ -202,6 +217,7 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console .notInstalled { color: #aaa; }"
     , "#userscripts { overflow: auto; width: 550px; max-height: 400px; }"
     , "#qlhmSource textarea.userscript-source { width: " + (self.width - 140) + "px; }"
+    , "#qlhm_nav_scriptMgmt { border-bottom: 1px solid #888; }"
   ]);
 
   // New...
@@ -209,17 +225,11 @@ HudManager.prototype.injectMenuEntry = function() {
     injectStyle("#qlhm_nav { float: right; }");
 
     nav.navbar["Hook"] = {
-        id: "qlhm_nav"
+      id: "qlhm_nav"
       , href: ""
       , submenu: {
-            "Script Management": {id: "qlhm_nav_scriptMgmt", class: "qlhm_noHref", href: ""}
-          , "Script Options": {
-                id: "qlhm_nav_scriptOpts"
-              , class: "qlhm_noHref"
-              , href: ""
-            }
-          , "": SUBMENU_END
-        }
+        "Script Management": { id: "qlhm_nav_scriptMgmt", class: "qlhm_noHref", href: "" }
+      }
     }
 
     // Override nav.initNav to do post-init stuff for QLHM
@@ -228,8 +238,9 @@ HudManager.prototype.injectMenuEntry = function() {
       oldInitNav.apply(nav, arguments);
 
       // QLHM-specific stuff
-      $("#qlhm_nav").on("click", ".qlhm_noHref", function() { return false });
-      $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function() { self.loadRepository.call(self); return false; });
+      $("#qlhm_nav").on("click", ".qlhm_noHref", function () { return false });
+      $("#qlhm_nav_scriptMgmt > a").click(function () { self.loadRepository.call(self); return false; });
+      $(".qlhm_nav_scriptMenuItem").click(function () { self.OnMenuItemClicked(this); });
     }
 
     self.rebuildNav();
@@ -757,8 +768,15 @@ HookManager.prototype.getUserScriptSource = function(aScriptID) {
   return script.content;
 }
 
-// Make init available
+HookManager.prototype.AddMenuItem = function (caption, handler) {
+  this.hud.AddMenuItem(caption, handler);
+}
+
+// Make init and AddMenuItem available
 var hm = new HookManager({debug: config.debug});
-aWin.HOOK_MANAGER = {init: hm.init.bind(hm)};
+aWin.HOOK_MANAGER = {
+  init: hm.init.bind(hm),
+  AddMenuItem: hm.AddMenuItem.bind(hm)
+};
 
 })(window);
