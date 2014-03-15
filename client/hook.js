@@ -206,7 +206,7 @@ HudManager.prototype.injectMenuEntry = function() {
 
   // New...
   if ($("#tn_exit").length) {
-    injectStyle("#qlhm_nav { float: left; }");
+    injectStyle("#qlhm_nav { float: right; }");
 
     nav.navbar["Hook"] = {
         id: "qlhm_nav"
