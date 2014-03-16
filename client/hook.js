@@ -39,7 +39,7 @@ var USERSCRIPT_REPOSITORY_URL = config.BASE_URL + "qlhmUserscriptRepository.js";
 // This is used to indicate if /web_reload is required (e.g. scripts were enabled or disabled)
 var webReloadRequired = false;
 
-// Holds the caption->handler pairs for script menu items added through HOOK_MANAGER.AddMenuItem(...) 
+// Holds the caption->handler pairs for script menu items added through HOOK_MANAGER.addMenuItem(...) 
 var scriptMenuItems = Array();
 
 // Local reference to jQuery (set during initialization)
@@ -169,18 +169,19 @@ HudManager.prototype.OnLayoutLoaded = function() {
   }
 }
 
-HudManager.prototype.AddMenuItem = function (caption, handler) {
-  scriptMenuItems[caption] = handler;
+HudManager.prototype.addMenuItem = function(aCaption, aHandler) {
+  scriptMenuItems[aCaption] = aHandler;
+
 }
 
-HudManager.prototype.OnMenuItemClicked = function (item) {
-  var caption = $(item).text();
+HudManager.prototype.onMenuItemClicked = function(aItem) {
+  var caption = $(aItem).text();
   var handler = scriptMenuItems[caption];
   if (handler)
     handler();
 }
 
-HudManager.prototype.rebuildNav = function () {
+HudManager.prototype.rebuildNav = function() {
   // Generate script command submenu
   for (var caption in scriptMenuItems) {
     nav.navbar["Hook"].submenu[caption] = { class: "qlhm_nav_scriptMenuItem", callback: "" };
@@ -238,8 +239,8 @@ HudManager.prototype.injectMenuEntry = function() {
       oldInitNav.apply(nav, arguments);
 
       // QLHM-specific stuff
-      $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function () { self.loadRepository.call(self); return false; });
-      $(".qlhm_nav_scriptMenuItem").click(function () { self.OnMenuItemClicked(this); });
+      $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function() { self.loadRepository.call(self); return false; });
+      $(".qlhm_nav_scriptMenuItem").click(function() { self.onMenuItemClicked(this); });
     }
 
     self.rebuildNav();
@@ -360,8 +361,8 @@ HudManager.prototype.showConsole = function() {
         if (192 == ev.keyCode) ev.preventDefault();
        })
        .on("click", "#userscripts li", function() { self.showDetails(this); })
-       .on("click", ".selectall", function () { $ui.find(":checkbox").prop("checked", true); })
-       .on("click", ".unselectall", function () { $ui.find(":checkbox").prop("checked", false); })
+       .on("click", ".selectall", function() { $ui.find(":checkbox").prop("checked", true); })
+       .on("click", ".unselectall", function() { $ui.find(":checkbox").prop("checked", false); })
        .on("click", ".deleteunsel", function() {
           $ui.find(":checkbox").each(function(index, item) {
             var $item = $(item);
@@ -767,15 +768,15 @@ HookManager.prototype.getUserScriptSource = function(aScriptID) {
   return script.content;
 }
 
-HookManager.prototype.AddMenuItem = function (caption, handler) {
-  this.hud.AddMenuItem(caption, handler);
+HookManager.prototype.addMenuItem = function(aCaption, aHandler) {
+  this.hud.addMenuItem(aCaption, aHandler);
 }
 
-// Make init and AddMenuItem available
+// Make init and addMenuItem available
 var hm = new HookManager({debug: config.debug});
 aWin.HOOK_MANAGER = {
   init: hm.init.bind(hm),
-  AddMenuItem: hm.AddMenuItem.bind(hm)
+  addMenuItem: hm.addMenuItem.bind(hm)
 };
 
 })(window);
