@@ -226,9 +226,9 @@ HudManager.prototype.injectMenuEntry = function() {
 
     nav.navbar["Hook"] = {
       id: "qlhm_nav"
-      , href: ""
+      , callback: ""
       , submenu: {
-        "Script Management": { id: "qlhm_nav_scriptMgmt", class: "qlhm_noHref", href: "" }
+        "Script Management": { id: "qlhm_nav_scriptMgmt", callback: "" }
       }
     }
 
@@ -238,8 +238,7 @@ HudManager.prototype.injectMenuEntry = function() {
       oldInitNav.apply(nav, arguments);
 
       // QLHM-specific stuff
-      $("#qlhm_nav").on("click", ".qlhm_noHref", function () { return false });
-      $("#qlhm_nav_scriptMgmt > a").click(function () { self.loadRepository.call(self); return false; });
+      $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function () { self.loadRepository.call(self); return false; });
       $(".qlhm_nav_scriptMenuItem").click(function () { self.OnMenuItemClicked(this); });
     }
 
