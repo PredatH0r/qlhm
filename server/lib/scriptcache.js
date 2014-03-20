@@ -34,6 +34,16 @@ scriptCache.prototype.each = function(aCallback) {
   }
 }
 
+scriptCache.prototype.filter = function(aCallback) {
+  var ret = [];
+  for (var i in _cache) {
+    if (aCallback.call(_cache[i], parseInt(i), _cache[i])) {
+      ret.push(_cache[i]);
+    }
+  }
+  return ret;
+}
+
 scriptCache.prototype.map = function(aCallback) {
   var ret = [];
   for (var i in _cache) ret.push(aCallback.call(_cache[i], parseInt(i), _cache[i]));
