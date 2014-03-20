@@ -64,6 +64,34 @@ server.get({path: "/serving", version: "1.0.0"}, function(req, res, next) {
   res.send(scripts);
 });
 
+
+server.get({path: "/cleanup", version: "1.0.0"}, function(req, res, next) {
+  // Valid remover?
+  if (!("key" in req.query && req.query.key in config.cacheMaintainers)) {
+    return res.send(404, {error: "Invalid or missing options."});
+  }
+
+  var invalidScriptIDs = SCRIPT_CACHE.filter(function() {
+    return !this.isValid();
+  }).map(function(aScript) {
+    return aScript.meta.id;
+  });
+
+  if (invalidScriptIDs.length) {
+    logTime("User '%s' cleaned up %d invalid script cache items with IDs %s"
+          , config.cacheMaintainers[req.query.key], invalidScriptIDs.length, invalidScriptIDs);
+
+    invalidScriptIDs.forEach(function(aID) {
+      SCRIPT_CACHE.remove(aID);
+    });
+  }
+  else {
+    logTime("User '%s' ran a cleanup, but there were no invalid script cache items found", config.cacheMaintainers[req.query.key]);
+  }
+
+  return res.send(200, {removed: invalidScriptIDs });
+});
+
 server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next) {
   var scriptID = uso.parseID(req.params[0]);
   if (!scriptID) return res.send(404, {error: "Invalid or missing options.  '/uso/[id_number]' and '/uso/[full_url_to_.user.js]' are accepted."});
@@ -180,7 +208,7 @@ server.get({path: /^\/uso\/?(.*)?/i, version: "1.0.0"}, function(req, res, next)
 
 // Static content
 // TODO: this regexp is unbelievably bad... replace it
-server.get(/^\/((?!(?:serving|uso|versioncheck)).)*$/, restify.serveStatic({
+server.get(/^\/((?!(?:cleanup|serving|uso|versioncheck)).)*$/, restify.serveStatic({
     directory: "./public"
   , default: "index.html"
   , maxAge: 300
