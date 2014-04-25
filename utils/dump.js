@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var fs = require("fs");
+var fs = require("fs-extra");
 
 var colors = require("colors")
   , program = require("commander")
@@ -17,8 +17,8 @@ var SERVING = program.site + "/serving"
   , RE_invalidChars = /[^\w-]/gi
   ;
 
-try { fs.rmdirSync(DUMP_DIR); } catch(e) {}
-try { fs.mkdirSync(DUMP_DIR); } catch(e) {}
+fs.removeSync(DUMP_DIR);
+fs.mkdirSync(DUMP_DIR);
 
 request(SERVING, function(aErr, aResp, aBody) {
   if (aErr)
