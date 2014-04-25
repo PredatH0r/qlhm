@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-var fs = require("fs-extra");
-
 var colors = require("colors")
+  , fs = require("fs-extra")
   , program = require("commander")
   , request = require("request")
   ;
