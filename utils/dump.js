@@ -12,6 +12,7 @@ program.option("-s, --site <site>", "The site running QLHM", "http://qlhm.phob.n
        ;
 
 var SERVING = program.site + "/serving"
+  , USO = program.site + "/uso/{{id}}?dump"
   , DUMP_DIR = __dirname + "/" + program.directory
   , RE_invalidChars = /[^\w-]/gi
   ;
@@ -29,12 +30,12 @@ request(SERVING, function(aErr, aResp, aBody) {
   scripts.forEach(function(aScript) {
     var theScript = "script " + aScript.id + " ('" + aScript.name + "')";
     console.log("Requesting %s".grey, theScript);
-    request(program.site + "/uso/" + aScript.id + "?dump", function(aErr, aResp, aBody) {
+    request(USO.replace("{{id}}", aScript.id), function(aErr, aResp, aBody) {
       if (aErr) return console.error("Error retrieving %s\n%s".red, theScript, aErr);
       console.log("Retrieved %s".green, theScript);
       var dest = DUMP_DIR + "/" + aScript.id + "-" + aScript.name.replace(RE_invalidChars, "_") + ".json";
       fs.writeFile(dest, aBody, function(aErr) {
-        if (aErr) return console.error("Error writing %s\n%s".red, theScript, aErr);
+        if (aErr) return console.error("Error writing %s to %s\n%s".red, theScript, dest, aErr);
         console.log("Wrote %s".cyan, theScript);
       });
     });
