@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+// `npm install` these first
 var colors = require("colors")
   , fs = require("fs-extra")
   , program = require("commander")
