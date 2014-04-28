@@ -625,8 +625,9 @@ HookManager.prototype.init = function() {
 }
 
 HookManager.prototype.initScripts = function () {
-  $.getScript(config.EXTRAQL_URL + "scripts/extraQL.js")
-    .success(this.initExtraQL.bind(this))
+  $.ajax({url:config.EXTRAQL_URL + "scripts/extraQL.js", dataType:"script", timeout:1000})
+    .done(this.initExtraQL.bind(this))
+    .fail(function() { console.log("using ^3QLHM^7 repository"); })
     .always(this.loadScripts.bind(this));
 }
 
@@ -726,6 +727,7 @@ HookManager.prototype.parseScriptHeader = function (aScript) {
   var headers = aScript.headers;
   var start = script.indexOf("// ==UserScript==");
   var end = script.indexOf("// ==/UserScript==");
+  var headerReset = {};
   if (start >= 0 && end >= 0) {
     var regex = new RegExp("^\\s*//\\s*@(\\w+)\\s+(.*?)\\s*$");
     script.substring(start, end).split("\n").forEach(function (line) {
@@ -734,8 +736,10 @@ HookManager.prototype.parseScriptHeader = function (aScript) {
         return;
       var key = match[1];
       var value = match[2].trim();
-      if (!(key in headers))
+      if (!(key in headers) || !headerReset[key]) {
         headers[key] = [value];
+        headerReset[key] = true;
+      }
       else
         headers[key].push(value);
     });
@@ -806,11 +810,11 @@ HookManager.prototype.injectUserScript = function(aScript) {
   var closure = ";(function() {" + aScript.content + "})();";
 
   // use $.getScript() when possible to preserve script file name in log and error messages
-  if (aScript._meta.filename && extraQL.isServerRunning()) {
+  if (aScript._meta.filename && extraQL && extraQL.isServerRunning()) {
     var url = config.EXTRAQL_URL + "scripts/" + aScript._meta.filename;
-    $.getScript(url)
-      .fail(function () { injectScript(closure); });
-  } else
+    $.getScript(url).fail(function () { injectScript(closure); });
+  }
+  else
     injectScript(closure);
 }
 
