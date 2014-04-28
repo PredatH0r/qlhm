@@ -5,7 +5,6 @@
 
 // called in ql.Init
 function main_hook() {
-  qz_instance.SendGameCommand("echo main_hook called");
   if (quakelive.mod_legals !== quakelive.activeModule) HOOK_MANAGER.init();
 }
 
@@ -17,6 +16,7 @@ function main_hook() {
 // !!!
 var config = {
     BASE_URL: "http://qlhm.phob.net/"
+  , EXTRAQL_URL: "http://127.0.0.1:27963/"
   , manual: []
   , debug: false
 };
@@ -97,11 +97,8 @@ function injectStyle(aStyle) {
 }
 
 function injectScript(aScript) {
-  var s = document.createElement("script");
-  s.type = "text/javascript";
-  s.innerHTML = Array.isArray(aScript) ? aScript.join("") : aScript;
-  document.body.appendChild(s);
-  document.body.removeChild(s);
+  var code = Array.isArray(aScript) ? aScript.join("") : aScript;
+  $.globalEval(code);
 }
 
 
@@ -127,6 +124,23 @@ readOnly(storage, "init", function storageInit(aCallback, aForceReset) {
     storage.scripts = STORAGE_TEMPLATE.scripts;
     storage.settings = STORAGE_TEMPLATE.settings;
     storage.save();
+  }
+
+  // convert old integer based script-ids to strings. Required for extraQL and maybe other non-USO script sources
+  for (var i = 0; i < storage.scripts.available.length; i++) {
+    if (typeof storage.scripts.available[i] == "number")
+      storage.scripts.available[i] = storage.scripts.available[i].toString();
+  }
+  for (i = 0; i < storage.scripts.enabled.length; i++) {
+    if (typeof storage.scripts.enabled[i] == "number")
+      storage.scripts.enabled[i] = storage.scripts.enabled[i].toString();
+  }
+  if (Array.isArray(storage.scripts.cache)) {
+    var cache = {};
+    for (i = 0; i < storage.scripts.cache.length; i++) {
+      cache[i.toString()] = storage.scripts.cache[i];
+    }
+    storage.scripts.cache = cache;
   }
 
   aCallback();
@@ -223,8 +237,6 @@ HudManager.prototype.injectMenuEntry = function() {
 
   // New...
   if ($("#tn_exit").length) {
-    injectStyle("#qlhm_nav { float: right; }");
-
     nav.navbar["Hook"] = {
       id: "qlhm_nav"
       , callback: ""
@@ -256,15 +268,12 @@ HudManager.prototype.injectMenuEntry = function() {
 }
 
 HudManager.prototype.scriptRowFromScript = function(aScript) {
-  var id = aScript._meta.id
+  var id = aScript._meta.id.toString()
     , enabled = -1 !== storage.scripts.enabled.indexOf(id)
-    , desc = aScript.headers.description ? e(aScript.headers.description[0]) : "<em>Unspecified</em>"
     ;
-
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
        + " <label for='userscript" + id + "'><a href='javascript:void(0)'>" + e(aScript.headers.name[0]) + "</a></label>"
-       //+ "<br><div class='details'>" + desc + "</div>"
        + "</li>";
 }
 
@@ -293,7 +302,7 @@ HudManager.prototype.showConsole = function() {
     scripts.push(storage.scripts.cache[storage.scripts.available[i]]);
   }
   $.each(HOOK_MANAGER.userscriptRepository, function(index, script) {
-    if (storage.scripts.available.indexOf(script.id) == -1)
+    if (storage.scripts.available.indexOf(script.id.toString()) == -1)
       scripts.push(script);
   });
 
@@ -497,7 +506,7 @@ HudManager.prototype.handleConsoleOk = function() {
   $con.find("input.userscript-state").each(function() {
     var $input = $(this)
       , $item = $input.closest("li")
-      , id = parseInt($item.data("id"))
+      , id = $item.data("id")
       ;
 
     // Should this userscript be deleted
@@ -528,12 +537,12 @@ HudManager.prototype.handleConsoleOk = function() {
 
   // add new scripts
   ids = ids.replace(/https:\/\/userscripts\.org\/scripts\/[a-z]+\//g, "").replace(/[^\d,]/g, "");
-  ids = ids.split(",").map(function(id) { return parseInt(id.trim()); });
+  ids = ids.split(",").map(function(id) { return id.trim(); });
 
   $con.find("input.userscript-state").each(function() {
     var $input = $(this)
       , $item = $input.closest("li")
-      , id = parseInt($item.data("id"))
+      , id = $item.data("id")
       ;
 
     if ($input.prop("checked") && !self.hm.hasUserScript(id)) {
@@ -543,7 +552,7 @@ HudManager.prototype.handleConsoleOk = function() {
 
   $.each(ids, function(i, id) {
     // New userscript?
-    if (id && !isNaN(id)) {
+    if (id) {
       if (self.hm.hasUserScript(id)) {
         log("The userscript with ID " + id + " already exists.  Try removing it first.");
       }
@@ -603,8 +612,20 @@ HookManager.prototype.init = function() {
   }
 
   readOnly(this, "hud", new HudManager(this));
-  storage.init(this.loadScripts.bind(this));
+  storage.init(this.initScripts.bind(this), false);
   setTimeout(this.versionCheck.bind(this), 5E3);
+}
+
+HookManager.prototype.initScripts = function () {
+  $.getScript(config.EXTRAQL_URL + "scripts/extraQL.js")
+    .success(this.initExtraQL.bind(this))
+    .always(this.loadScripts.bind(this));
+}
+
+HookManager.prototype.initExtraQL = function() {
+  JSONP_PROXY_TEMPLATE = config.EXTRAQL_URL + "uso/{{id}}";
+  USERSCRIPT_REPOSITORY_URL = config.EXTRAQL_URL + "qlhmUserscriptRepository.js";
+  log("using ^3extraQL^7 script repository");
 }
 
 HookManager.prototype.versionCheck = function() {
@@ -681,21 +702,44 @@ HookManager.prototype.fetchScript = function(aScriptID, aCB) {
   .fail(self.handleScriptError.bind(self, aScriptID));
 }
 
-HookManager.prototype.handleScriptSuccess = function(aData) {
-  log("^2Successfully retrieved script with ID '^5" + aData._meta.id + "^2' '^5" + aData.headers.name[0] + "^2'");
-  this.addUserScript(aData);
+HookManager.prototype.handleScriptSuccess = function(aScript) {
+  log("^2Successfully retrieved script with ID '^5" + aScript._meta.id + "^2' '^5" + aScript.headers.name[0] + "^2'");
+  this.parseScriptHeader(aScript);
+  this.addUserScript(aScript);
 }
 
 HookManager.prototype.handleScriptError = function(aScriptID, jqXHR, settings, err) {
   log("^1Failed to retrieve script with ID '^5" + aScriptID + "^1' : ^7" + err);
 }
 
+HookManager.prototype.parseScriptHeader = function (aScript) {
+  // this code is not necessary ATM, but will support direct loading of a script from a URL without a separate .meta.js
+  var script = aScript.content;
+  var headers = aScript.headers;
+  var start = script.indexOf("// ==UserScript==");
+  var end = script.indexOf("// ==/UserScript==");
+  if (start >= 0 && end >= 0) {
+    var regex = new RegExp("^\\s*//\\s*@(\\w+)\\s+(.*?)\\s*$");
+    script.substring(start, end).split("\n").forEach(function (line) {
+      var match = line.match(regex);
+      if (!match)
+        return;
+      var key = match[1];
+      var value = match[2].trim();
+      if (!(key in headers))
+        headers[key] = [value];
+      else
+        headers[key].push(value);
+    });
+  }
+}
+
 HookManager.prototype.hasUserScript = function(aID) {
-  return -1 != storage.scripts.available.indexOf(aID);
+  return -1 != storage.scripts.available.indexOf(aID.toString());
 }
 
 HookManager.prototype.addUserScript = function(aScript) {
-  var id = aScript._meta.id;
+  var id = aScript._meta.id.toString();
   // Only add entries if this is a new script...
   if (!this.hasUserScript(id)) {
     storage.scripts.available.push(id);
@@ -703,10 +747,11 @@ HookManager.prototype.addUserScript = function(aScript) {
   }
   storage.scripts.cache[id] = aScript;
   storage.save();
-  this.injectUserScript(storage.scripts.cache[id]);
+  this.injectUserScript(aScript);
 }
 
 HookManager.prototype.removeUserScript = function(aID) {
+  aID = aID.toString();
   var avIndex = storage.scripts.available.indexOf(aID)
     , enIndex = storage.scripts.enabled.indexOf(aID)
     , name
@@ -755,7 +800,15 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
 
 HookManager.prototype.injectUserScript = function(aScript) {
   log("^7Injecting userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
-  injectScript(";(function() {" + aScript.content + "})();");
+  var closure = ";(function() {" + aScript.content + "})();";
+
+  // use $.getScript() when possible to preserve script file name in log and error messages
+  if (aScript._meta.filename && extraQL.isServerRunning()) {
+    var url = config.EXTRAQL_URL + "scripts/" + aScript._meta.filename;
+    $.getScript(url)
+      .fail(function () { injectScript(closure); });
+  } else
+    injectScript(closure);
 }
 
 HookManager.prototype.getUserScript = function(aScriptID) {
