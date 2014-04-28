@@ -108,7 +108,7 @@ function injectScript(aScript) {
 var storage = Object.create(null);
 readOnly(storage, "root", "qlhm");
 readOnly(storage, "init", function storageInit(aCallback, aForceReset) {
-  var STORAGE_TEMPLATE = {settings: {}, scripts: {available: [], enabled: [], cache: {}}};
+  var STORAGE_TEMPLATE = {settings: {}, scripts: {available: {}, enabled: {}, cache: {}}};
 
   if (aForceReset) log("^1WARNING: ^7resetting QLHM localStorage");
 
@@ -127,22 +127,22 @@ readOnly(storage, "init", function storageInit(aCallback, aForceReset) {
   }
 
   // convert old integer based script-ids to strings. Required for extraQL and maybe other non-USO script sources
-  for (var i = 0; i < storage.scripts.available.length; i++) {
-    if (typeof storage.scripts.available[i] == "number")
-      storage.scripts.available[i] = storage.scripts.available[i].toString();
-  }
-  for (i = 0; i < storage.scripts.enabled.length; i++) {
-    if (typeof storage.scripts.enabled[i] == "number")
-      storage.scripts.enabled[i] = storage.scripts.enabled[i].toString();
-  }
-  if (Array.isArray(storage.scripts.cache)) {
+  if (Array.isArray(storage.scripts.available)) {
+    var available = {};
+    for (var i = 0; i < storage.scripts.available.length; i++)
+      available[storage.scripts.available[i].toString()] = true;
+    storage.scripts.available = available;
+
+    var enabled = {};
+    for (i = 0; i < storage.scripts.enabled.length; i++)
+      enabled[storage.scripts.enabled[i].toString()] = true;
+    storage.scripts.enabled = enabled;
+
     var cache = {};
-    for (i = 0; i < storage.scripts.cache.length; i++) {
-      cache[i.toString()] = storage.scripts.cache[i];
-    }
+    for (var key in storage.scripts.cache)
+      cache[key.toString()] = storage.scripts.cache[key];
     storage.scripts.cache = cache;
   }
-
   aCallback();
 });
 readOnly(storage, "save", function storageSave() {
@@ -159,6 +159,7 @@ function HudManager(aHookManager) {
   readOnly(this, "hm", aHookManager);
   readOnly(this, "width", 900);
   this.selectedScriptElement = null;
+  this.rebuildNavBarTimer = undefined;
 
   quakelive.AddHook("OnLayoutLoaded", this.OnLayoutLoaded.bind(this));
 
@@ -185,7 +186,9 @@ HudManager.prototype.OnLayoutLoaded = function() {
 
 HudManager.prototype.addMenuItem = function(aCaption, aHandler) {
   scriptMenuItems[aCaption] = aHandler;
-
+  if (this.rebuildNavBarTimer)
+    window.clearTimeout(this.rebuildNavBarTimer);
+  this.rebuildNavBarTimer = window.setTimeout(function() { this.rebuildNav(); }.bind(this), 200);
 }
 
 HudManager.prototype.onMenuItemClicked = function(aItem) {
@@ -195,7 +198,12 @@ HudManager.prototype.onMenuItemClicked = function(aItem) {
     handler();
 }
 
-HudManager.prototype.rebuildNav = function() {
+HudManager.prototype.rebuildNav = function () {
+  // method could have been called by the timer before the menu was created
+  this.rebuildNavBarTimer = undefined;
+  if (!nav.navbar["Hook"])
+    return;
+
   // Generate script command submenu
   for (var caption in scriptMenuItems) {
     nav.navbar["Hook"].submenu[caption] = { class: "qlhm_nav_scriptMenuItem", callback: "" };
@@ -269,7 +277,7 @@ HudManager.prototype.injectMenuEntry = function() {
 
 HudManager.prototype.scriptRowFromScript = function(aScript) {
   var id = aScript._meta.id.toString()
-    , enabled = -1 !== storage.scripts.enabled.indexOf(id)
+    , enabled = storage.scripts.enabled[id]
     ;
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
@@ -298,11 +306,11 @@ HudManager.prototype.showConsole = function() {
 
   // Get and sort all scripts
   var scripts = [];
-  for (var i = 0, e = storage.scripts.available.length; i < e; ++i) {
-    scripts.push(storage.scripts.cache[storage.scripts.available[i]]);
-  }
+  $.each(storage.scripts.available, function(id) {
+    scripts.push(storage.scripts.cache[id]);
+  });
   $.each(HOOK_MANAGER.userscriptRepository, function(index, script) {
-    if (storage.scripts.available.indexOf(script.id.toString()) == -1)
+    if (!storage.scripts.available[script.id.toString()])
       scripts.push(script);
   });
 
@@ -511,7 +519,7 @@ HudManager.prototype.handleConsoleOk = function() {
 
     // Should this userscript be deleted
     if ($item.data("toDelete")) {
-      if (storage.scripts.enabled.indexOf(id) !== -1) {
+      if (storage.scripts.enabled[id]) {
         webReloadRequired = true;
       }
 
@@ -625,7 +633,7 @@ HookManager.prototype.initScripts = function () {
 HookManager.prototype.initExtraQL = function() {
   JSONP_PROXY_TEMPLATE = config.EXTRAQL_URL + "uso/{{id}}";
   USERSCRIPT_REPOSITORY_URL = config.EXTRAQL_URL + "qlhmUserscriptRepository.js";
-  log("using ^3extraQL^7 script repository");
+  log("Using ^3extraQL^7 script repository");
 }
 
 HookManager.prototype.versionCheck = function() {
@@ -655,7 +663,9 @@ HookManager.prototype.loadScripts = function() {
   var self = this;
 
   // Fire off requests for each script
-  $.each(storage.scripts.enabled, function(i, scriptID) {
+  $.each(storage.scripts.enabled, function (scriptID, enabled) {
+    if (!enabled)
+      return;
     var script = storage.scripts.cache[scriptID];
 
     // TODO: re-enable loading from cache once expiration stuff is in place...
@@ -663,19 +673,18 @@ HookManager.prototype.loadScripts = function() {
 
     // Serve from cache?
     if (USE_CACHE && script) {
-      log("^7Retrieving '^5" + script.headers.name[0] + "^7' (ID '^5" + scriptID + "^7') from cache");
       self.injectUserScript(script);
     }
     // ... or pull fresh data
     else {
-      log("^7Attempting fresh retrieval of script with ID '^5" + scriptID + "^7'");
+      log("^7Requesting userscript ^5" + scriptID + "^7");
       self.fetchScript(scriptID);
     }
   });
 
   // User-specified scripts
   $.each(config.manual, function(i, scriptURL) {
-    log("^7Attempting fresh retrieval of script with URL '^5" + scriptURL + "^7'");
+    log("^7Requesting userscript ^5" + scriptURL + "^7");
     $.ajax({
       url: scriptURL
     , dataType: "jsonp"
@@ -703,13 +712,12 @@ HookManager.prototype.fetchScript = function(aScriptID, aCB) {
 }
 
 HookManager.prototype.handleScriptSuccess = function(aScript) {
-  log("^2Successfully retrieved script with ID '^5" + aScript._meta.id + "^2' '^5" + aScript.headers.name[0] + "^2'");
   this.parseScriptHeader(aScript);
   this.addUserScript(aScript);
 }
 
 HookManager.prototype.handleScriptError = function(aScriptID, jqXHR, settings, err) {
-  log("^1Failed to retrieve script with ID '^5" + aScriptID + "^1' : ^7" + err);
+  log("^1Failed to retrieve script with ID ^5" + aScriptID + "^1 : ^7" + err);
 }
 
 HookManager.prototype.parseScriptHeader = function (aScript) {
@@ -735,15 +743,15 @@ HookManager.prototype.parseScriptHeader = function (aScript) {
 }
 
 HookManager.prototype.hasUserScript = function(aID) {
-  return -1 != storage.scripts.available.indexOf(aID.toString());
+  return storage.scripts.available[aID.toString()];
 }
 
 HookManager.prototype.addUserScript = function(aScript) {
   var id = aScript._meta.id.toString();
   // Only add entries if this is a new script...
   if (!this.hasUserScript(id)) {
-    storage.scripts.available.push(id);
-    storage.scripts.enabled.push(id);
+    storage.scripts.available[id] = true;
+    storage.scripts.enabled[id] = true;
   }
   storage.scripts.cache[id] = aScript;
   storage.save();
@@ -752,21 +760,17 @@ HookManager.prototype.addUserScript = function(aScript) {
 
 HookManager.prototype.removeUserScript = function(aID) {
   aID = aID.toString();
-  var avIndex = storage.scripts.available.indexOf(aID)
-    , enIndex = storage.scripts.enabled.indexOf(aID)
-    , name
-    ;
+  var name;
 
-  if (-1 == avIndex) return false;
+  if (!this.hasUserScript(aID)) return false;
   name = storage.scripts.cache[aID].headers.name[0];
-  storage.scripts.available.splice(avIndex, 1);
-
-  if (-1 != enIndex) storage.scripts.enabled.splice(enIndex, 1);
+  delete storage.scripts.available[aID];
+  delete storage.scripts.enabled[aID];
   delete storage.scripts.cache[aID];
 
   storage.save();
 
-  log("^7'^5" + name + "^7' has been removed, but you must restart QUAKE LIVE for the change to take effect.");
+  log("^5" + aID + "^7: ^3" + name + "^7 has been removed, but you must restart QUAKE LIVE for the change to take effect.");
 
   return true;
 }
@@ -774,7 +778,6 @@ HookManager.prototype.removeUserScript = function(aID) {
 HookManager.prototype.toggleUserScript = function(aID, aEnable) {
   // return true if web_reload is required to make the change take effect
   var enable = true === aEnable ? aEnable : false
-    , enIndex = storage.scripts.enabled.indexOf(aID)
     , script = storage.scripts.cache[aID]
     , name
     ;
@@ -782,15 +785,15 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
   if (!script) return false;
   name = script.headers.name[0];
 
-  if (enable && -1 == enIndex) {
-    storage.scripts.enabled.push(aID);
+  if (enable && !storage.scripts.enabled[aID]) {
+    storage.scripts.enabled[aID] = true;
     storage.save();
     this.injectUserScript(script);
     log("^7'^5" + name + "^7' has been enabled and injected.  You might need to restarted QUAKE LIVE to get the expected behaviour.");
     return false;
   }
-  else if (!enable && -1 != enIndex) {
-    storage.scripts.enabled.splice(enIndex, 1);
+  else if (!enable && storage.scripts.enabled[aID]) {
+    delete storage.scripts.enabled[aID];
     storage.save();
     log("^7'^5" + name + "^7' has been disabled, but you must restart QUAKE LIVE for the change to take effect.");
     return true;
@@ -799,7 +802,7 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
 }
 
 HookManager.prototype.injectUserScript = function(aScript) {
-  log("^7Injecting userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
+  log("^7Starting userscript ^5" + aScript._meta.id + "^7: ^3" + aScript.headers.name[0] + "^7");
   var closure = ";(function() {" + aScript.content + "})();";
 
   // use $.getScript() when possible to preserve script file name in log and error messages
