@@ -807,10 +807,10 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
 
 HookManager.prototype.injectUserScript = function(aScript) {
   log("^7Starting userscript ^5" + aScript._meta.id + "^7: ^3" + aScript.headers.name[0] + "^7");
-  var closure = ";(function() {" + aScript.content + "})();";
+  var closure = ";(function() {" + aScript.content + "\n})();";
 
   // use $.getScript() when possible to preserve script file name in log and error messages
-  if (aScript._meta.filename && extraQL && extraQL.isServerRunning()) {
+  if (aScript._meta.filename && aScript.headers["unwrap"] !== undefined && extraQL && extraQL.isServerRunning()) {
     var url = config.EXTRAQL_URL + "scripts/" + aScript._meta.filename;
     $.getScript(url).fail(function () { injectScript(closure); });
   }
