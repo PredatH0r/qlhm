@@ -663,10 +663,16 @@ HookManager.prototype.versionCheck = function() {
 HookManager.prototype.loadScripts = function() {
   var self = this;
 
+  // get sorted list of enabled script IDs (allows rudimentary control over dependencies / execution order)
+  var scriptIds = [];
+  $.each(storage.scripts.enabled, function(scriptID, enabled) {
+    if (enabled)
+      scriptIds.push(scriptID);
+  });
+  scriptIds.sort();
+
   // Fire off requests for each script
-  $.each(storage.scripts.enabled, function (scriptID, enabled) {
-    if (!enabled)
-      return;
+  $.each(scriptIds, function (i, scriptID) {
     var script = storage.scripts.cache[scriptID];
 
     // TODO: re-enable loading from cache once expiration stuff is in place...
