@@ -5,7 +5,6 @@
 
 // called in ql.Init
 function main_hook() {
-  qz_instance.SendGameCommand("echo main_hook called");
   if (quakelive.mod_legals !== quakelive.activeModule) HOOK_MANAGER.init();
 }
 
@@ -17,6 +16,7 @@ function main_hook() {
 // !!!
 var config = {
     BASE_URL: "http://qlhm.phob.net/"
+  , EXTRAQL_URL: "http://127.0.0.1:27963/"
   , manual: []
   , debug: false
 };
@@ -38,6 +38,9 @@ var USERSCRIPT_REPOSITORY_URL = config.BASE_URL + "qlhmUserscriptRepository.js";
 
 // This is used to indicate if /web_reload is required (e.g. scripts were enabled or disabled)
 var webReloadRequired = false;
+
+// Holds the caption->handler pairs for script menu items added through HOOK_MANAGER.addMenuItem(...) 
+var scriptMenuItems = Array();
 
 // Local reference to jQuery (set during initialization)
 var $;
@@ -94,11 +97,8 @@ function injectStyle(aStyle) {
 }
 
 function injectScript(aScript) {
-  var s = document.createElement("script");
-  s.type = "text/javascript";
-  s.innerHTML = Array.isArray(aScript) ? aScript.join("") : aScript;
-  document.body.appendChild(s);
-  document.body.removeChild(s);
+  var code = Array.isArray(aScript) ? aScript.join("") : aScript;
+  $.globalEval(code);
 }
 
 
@@ -108,7 +108,7 @@ function injectScript(aScript) {
 var storage = Object.create(null);
 readOnly(storage, "root", "qlhm");
 readOnly(storage, "init", function storageInit(aCallback, aForceReset) {
-  var STORAGE_TEMPLATE = {settings: {}, scripts: {available: [], enabled: [], cache: {}}};
+  var STORAGE_TEMPLATE = {settings: {}, scripts: {available: {}, enabled: {}, cache: {}}};
 
   if (aForceReset) log("^1WARNING: ^7resetting QLHM localStorage");
 
@@ -126,6 +126,23 @@ readOnly(storage, "init", function storageInit(aCallback, aForceReset) {
     storage.save();
   }
 
+  // convert old integer based script-ids to strings. Required for extraQL and maybe other non-USO script sources
+  if (Array.isArray(storage.scripts.available)) {
+    var available = {};
+    for (var i = 0; i < storage.scripts.available.length; i++)
+      available[storage.scripts.available[i].toString()] = true;
+    storage.scripts.available = available;
+
+    var enabled = {};
+    for (i = 0; i < storage.scripts.enabled.length; i++)
+      enabled[storage.scripts.enabled[i].toString()] = true;
+    storage.scripts.enabled = enabled;
+
+    var cache = {};
+    for (var key in storage.scripts.cache)
+      cache[key.toString()] = storage.scripts.cache[key];
+    storage.scripts.cache = cache;
+  }
   aCallback();
 });
 readOnly(storage, "save", function storageSave() {
@@ -142,6 +159,7 @@ function HudManager(aHookManager) {
   readOnly(this, "hm", aHookManager);
   readOnly(this, "width", 900);
   this.selectedScriptElement = null;
+  this.rebuildNavBarTimer = undefined;
 
   quakelive.AddHook("OnLayoutLoaded", this.OnLayoutLoaded.bind(this));
 
@@ -166,10 +184,30 @@ HudManager.prototype.OnLayoutLoaded = function() {
   }
 }
 
-HudManager.prototype.rebuildNav = function() {
+HudManager.prototype.addMenuItem = function(aCaption, aHandler) {
+  scriptMenuItems[aCaption] = aHandler;
+  if (this.rebuildNavBarTimer)
+    window.clearTimeout(this.rebuildNavBarTimer);
+  this.rebuildNavBarTimer = window.setTimeout(function() { this.rebuildNav(); }.bind(this), 200);
+}
+
+HudManager.prototype.onMenuItemClicked = function(aItem) {
+  var caption = $(aItem).text();
+  var handler = scriptMenuItems[caption];
+  if (handler)
+    handler();
+}
+
+HudManager.prototype.rebuildNav = function () {
+  // method could have been called by the timer before the menu was created
+  this.rebuildNavBarTimer = undefined;
+  if (!nav.navbar["Hook"])
+    return;
+
   // Generate script command submenu
-  // TODO: allow scripts to register/unregister commands
-  nav.navbar["Hook"].submenu["Script Options"].submenu = {"None defined": {class: "qlhm_noHref", href: ""}, "": SUBMENU_END}
+  for (var caption in scriptMenuItems) {
+    nav.navbar["Hook"].submenu[caption] = { class: "qlhm_nav_scriptMenuItem", callback: "" };
+  }
 
   // Rebuild the navbar
   nav.initNav({
@@ -202,24 +240,17 @@ HudManager.prototype.injectMenuEntry = function() {
     , "#qlhm_console .notInstalled { color: #aaa; }"
     , "#userscripts { overflow: auto; width: 550px; max-height: 400px; }"
     , "#qlhmSource textarea.userscript-source { width: " + (self.width - 140) + "px; }"
+    , "#qlhm_nav_scriptMgmt { border-bottom: 1px solid #888; }"
   ]);
 
   // New...
   if ($("#tn_exit").length) {
-    injectStyle("#qlhm_nav { float: left; }");
-
     nav.navbar["Hook"] = {
-        id: "qlhm_nav"
-      , href: ""
+      id: "qlhm_nav"
+      , callback: ""
       , submenu: {
-            "Script Management": {id: "qlhm_nav_scriptMgmt", class: "qlhm_noHref", href: ""}
-          , "Script Options": {
-                id: "qlhm_nav_scriptOpts"
-              , class: "qlhm_noHref"
-              , href: ""
-            }
-          , "": SUBMENU_END
-        }
+        "Script Management": { id: "qlhm_nav_scriptMgmt", callback: "" }
+      }
     }
 
     // Override nav.initNav to do post-init stuff for QLHM
@@ -228,8 +259,8 @@ HudManager.prototype.injectMenuEntry = function() {
       oldInitNav.apply(nav, arguments);
 
       // QLHM-specific stuff
-      $("#qlhm_nav").on("click", ".qlhm_noHref", function() { return false });
       $("#qlhm_nav > a, #qlhm_nav_scriptMgmt > a").click(function() { self.loadRepository.call(self); return false; });
+      $(".qlhm_nav_scriptMenuItem").click(function() { self.onMenuItemClicked(this); });
     }
 
     self.rebuildNav();
@@ -245,15 +276,12 @@ HudManager.prototype.injectMenuEntry = function() {
 }
 
 HudManager.prototype.scriptRowFromScript = function(aScript) {
-  var id = aScript._meta.id
-    , enabled = -1 !== storage.scripts.enabled.indexOf(id)
-    , desc = aScript.headers.description ? e(aScript.headers.description[0]) : "<em>Unspecified</em>"
+  var id = aScript._meta.id.toString()
+    , enabled = storage.scripts.enabled[id]
     ;
-
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
        + " <label for='userscript" + id + "'><a href='javascript:void(0)'>" + e(aScript.headers.name[0]) + "</a></label>"
-       //+ "<br><div class='details'>" + desc + "</div>"
        + "</li>";
 }
 
@@ -278,11 +306,11 @@ HudManager.prototype.showConsole = function() {
 
   // Get and sort all scripts
   var scripts = [];
-  for (var i = 0, e = storage.scripts.available.length; i < e; ++i) {
-    scripts.push(storage.scripts.cache[storage.scripts.available[i]]);
-  }
+  $.each(storage.scripts.available, function(id) {
+    scripts.push(storage.scripts.cache[id]);
+  });
   $.each(HOOK_MANAGER.userscriptRepository, function(index, script) {
-    if (storage.scripts.available.indexOf(script.id) == -1)
+    if (!storage.scripts.available[script.id.toString()])
       scripts.push(script);
   });
 
@@ -350,8 +378,8 @@ HudManager.prototype.showConsole = function() {
         if (192 == ev.keyCode) ev.preventDefault();
        })
        .on("click", "#userscripts li", function() { self.showDetails(this); })
-       .on("click", ".selectall", function () { $ui.find(":checkbox").prop("checked", true); })
-       .on("click", ".unselectall", function () { $ui.find(":checkbox").prop("checked", false); })
+       .on("click", ".selectall", function() { $ui.find(":checkbox").prop("checked", true); })
+       .on("click", ".unselectall", function() { $ui.find(":checkbox").prop("checked", false); })
        .on("click", ".deleteunsel", function() {
           $ui.find(":checkbox").each(function(index, item) {
             var $item = $(item);
@@ -486,12 +514,12 @@ HudManager.prototype.handleConsoleOk = function() {
   $con.find("input.userscript-state").each(function() {
     var $input = $(this)
       , $item = $input.closest("li")
-      , id = parseInt($item.data("id"))
+      , id = $item.data("id")
       ;
 
     // Should this userscript be deleted
     if ($item.data("toDelete")) {
-      if (storage.scripts.enabled.indexOf(id) !== -1) {
+      if (storage.scripts.enabled[id]) {
         webReloadRequired = true;
       }
 
@@ -517,12 +545,12 @@ HudManager.prototype.handleConsoleOk = function() {
 
   // add new scripts
   ids = ids.replace(/https:\/\/userscripts\.org\/scripts\/[a-z]+\//g, "").replace(/[^\d,]/g, "");
-  ids = ids.split(",").map(function(id) { return parseInt(id.trim()); });
+  ids = ids.split(",").map(function(id) { return id.trim(); });
 
   $con.find("input.userscript-state").each(function() {
     var $input = $(this)
       , $item = $input.closest("li")
-      , id = parseInt($item.data("id"))
+      , id = $item.data("id")
       ;
 
     if ($input.prop("checked") && !self.hm.hasUserScript(id)) {
@@ -532,7 +560,7 @@ HudManager.prototype.handleConsoleOk = function() {
 
   $.each(ids, function(i, id) {
     // New userscript?
-    if (id && !isNaN(id)) {
+    if (id) {
       if (self.hm.hasUserScript(id)) {
         log("The userscript with ID " + id + " already exists.  Try removing it first.");
       }
@@ -592,8 +620,21 @@ HookManager.prototype.init = function() {
   }
 
   readOnly(this, "hud", new HudManager(this));
-  storage.init(this.loadScripts.bind(this));
+  storage.init(this.initScripts.bind(this), false);
   setTimeout(this.versionCheck.bind(this), 5E3);
+}
+
+HookManager.prototype.initScripts = function () {
+  $.ajax({url:config.EXTRAQL_URL + "scripts/extraQL.js", dataType:"script", timeout:1000})
+    .done(this.initExtraQL.bind(this))
+    .fail(function() { console.log("using ^3QLHM^7 repository"); })
+    .always(this.loadScripts.bind(this));
+}
+
+HookManager.prototype.initExtraQL = function() {
+  JSONP_PROXY_TEMPLATE = config.EXTRAQL_URL + "uso/{{id}}";
+  USERSCRIPT_REPOSITORY_URL = config.EXTRAQL_URL + "qlhmUserscriptRepository.js";
+  log("Using ^3extraQL^7 script repository");
 }
 
 HookManager.prototype.versionCheck = function() {
@@ -622,8 +663,16 @@ HookManager.prototype.versionCheck = function() {
 HookManager.prototype.loadScripts = function() {
   var self = this;
 
+  // get sorted list of enabled script IDs (allows rudimentary control over dependencies / execution order)
+  var scriptIds = [];
+  $.each(storage.scripts.enabled, function(scriptID, enabled) {
+    if (enabled)
+      scriptIds.push(scriptID);
+  });
+  scriptIds.sort();
+
   // Fire off requests for each script
-  $.each(storage.scripts.enabled, function(i, scriptID) {
+  $.each(scriptIds, function (i, scriptID) {
     var script = storage.scripts.cache[scriptID];
 
     // TODO: re-enable loading from cache once expiration stuff is in place...
@@ -631,19 +680,18 @@ HookManager.prototype.loadScripts = function() {
 
     // Serve from cache?
     if (USE_CACHE && script) {
-      log("^7Retrieving '^5" + script.headers.name[0] + "^7' (ID '^5" + scriptID + "^7') from cache");
       self.injectUserScript(script);
     }
     // ... or pull fresh data
     else {
-      log("^7Attempting fresh retrieval of script with ID '^5" + scriptID + "^7'");
+      log("^7Requesting userscript ^5" + scriptID + "^7");
       self.fetchScript(scriptID);
     }
   });
 
   // User-specified scripts
   $.each(config.manual, function(i, scriptURL) {
-    log("^7Attempting fresh retrieval of script with URL '^5" + scriptURL + "^7'");
+    log("^7Requesting userscript ^5" + scriptURL + "^7");
     $.ajax({
       url: scriptURL
     , dataType: "jsonp"
@@ -670,47 +718,69 @@ HookManager.prototype.fetchScript = function(aScriptID, aCB) {
   .fail(self.handleScriptError.bind(self, aScriptID));
 }
 
-HookManager.prototype.handleScriptSuccess = function(aData) {
-  log("^2Successfully retrieved script with ID '^5" + aData._meta.id + "^2' '^5" + aData.headers.name[0] + "^2'");
-  this.addUserScript(aData);
+HookManager.prototype.handleScriptSuccess = function(aScript) {
+  this.parseScriptHeader(aScript);
+  this.addUserScript(aScript);
 }
 
 HookManager.prototype.handleScriptError = function(aScriptID, jqXHR, settings, err) {
-  log("^1Failed to retrieve script with ID '^5" + aScriptID + "^1' : ^7" + err);
+  log("^1Failed to retrieve script with ID ^5" + aScriptID + "^1 : ^7" + err);
+}
+
+HookManager.prototype.parseScriptHeader = function (aScript) {
+  // this code is not necessary ATM, but will support direct loading of a script from a URL without a separate .meta.js
+  var script = aScript.content;
+  var headers = aScript.headers;
+  var start = script.indexOf("// ==UserScript==");
+  var end = script.indexOf("// ==/UserScript==");
+  var headerReset = {};
+  if (start >= 0 && end >= 0) {
+    var regex = new RegExp("^\\s*//\\s*@(\\w+)\\s+(.*?)\\s*$");
+    script.substring(start, end).split("\n").forEach(function (line) {
+      var match = line.match(regex);
+      if (!match)
+        return;
+      var key = match[1];
+      var value = match[2].trim();
+      if (!(key in headers) || !headerReset[key]) {
+        headers[key] = [value];
+        headerReset[key] = true;
+      }
+      else
+        headers[key].push(value);
+    });
+  }
 }
 
 HookManager.prototype.hasUserScript = function(aID) {
-  return -1 != storage.scripts.available.indexOf(aID);
+  return storage.scripts.available[aID.toString()];
 }
 
 HookManager.prototype.addUserScript = function(aScript) {
-  var id = aScript._meta.id;
+  var id = aScript._meta.id.toString();
   // Only add entries if this is a new script...
   if (!this.hasUserScript(id)) {
-    storage.scripts.available.push(id);
-    storage.scripts.enabled.push(id);
+    storage.scripts.available[id] = true;
+    storage.scripts.enabled[id] = true;
   }
   storage.scripts.cache[id] = aScript;
   storage.save();
-  this.injectUserScript(storage.scripts.cache[id]);
+  this.injectUserScript(aScript);
 }
 
 HookManager.prototype.removeUserScript = function(aID) {
-  var avIndex = storage.scripts.available.indexOf(aID)
-    , enIndex = storage.scripts.enabled.indexOf(aID)
-    , name
-    ;
+  aID = aID.toString();
+  var name;
 
-  if (-1 == avIndex) return false;
+  if (!this.hasUserScript(aID)) return false;
   name = storage.scripts.cache[aID].headers.name[0];
-  storage.scripts.available.splice(avIndex, 1);
-
-  if (-1 != enIndex) storage.scripts.enabled.splice(enIndex, 1);
+  delete storage.scripts.available[aID];
+  delete storage.scripts.enabled[aID];
   delete storage.scripts.cache[aID];
 
   storage.save();
 
-  log("^7'^5" + name + "^7' has been removed, but you must restart QUAKE LIVE for the change to take effect.");
+  log("^5" + aID + "^7: ^3" + name + "^7 has been removed, but you must restart QUAKE LIVE for the change to take effect.");
 
   return true;
 }
@@ -718,7 +788,6 @@ HookManager.prototype.removeUserScript = function(aID) {
 HookManager.prototype.toggleUserScript = function(aID, aEnable) {
   // return true if web_reload is required to make the change take effect
   var enable = true === aEnable ? aEnable : false
-    , enIndex = storage.scripts.enabled.indexOf(aID)
     , script = storage.scripts.cache[aID]
     , name
     ;
@@ -726,15 +795,15 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
   if (!script) return false;
   name = script.headers.name[0];
 
-  if (enable && -1 == enIndex) {
-    storage.scripts.enabled.push(aID);
+  if (enable && !storage.scripts.enabled[aID]) {
+    storage.scripts.enabled[aID] = true;
     storage.save();
     this.injectUserScript(script);
     log("^7'^5" + name + "^7' has been enabled and injected.  You might need to restarted QUAKE LIVE to get the expected behaviour.");
     return false;
   }
-  else if (!enable && -1 != enIndex) {
-    storage.scripts.enabled.splice(enIndex, 1);
+  else if (!enable && storage.scripts.enabled[aID]) {
+    delete storage.scripts.enabled[aID];
     storage.save();
     log("^7'^5" + name + "^7' has been disabled, but you must restart QUAKE LIVE for the change to take effect.");
     return true;
@@ -743,8 +812,16 @@ HookManager.prototype.toggleUserScript = function(aID, aEnable) {
 }
 
 HookManager.prototype.injectUserScript = function(aScript) {
-  log("^7Injecting userscript '^5" + aScript.headers.name[0] + "^7' (ID '^5" + aScript._meta.id + "^7')");
-  injectScript(";(function() {" + aScript.content + "})();");
+  log("^7Starting userscript ^5" + aScript._meta.id + "^7: ^3" + aScript.headers.name[0] + "^7");
+  var closure = ";(function() {" + aScript.content + "\n})();";
+
+  // use $.getScript() when possible to preserve script file name in log and error messages
+  if (aScript._meta.filename && aScript.headers["unwrap"] !== undefined && extraQL && extraQL.isServerRunning()) {
+    var url = config.EXTRAQL_URL + "scripts/" + aScript._meta.filename;
+    $.getScript(url).fail(function () { injectScript(closure); });
+  }
+  else
+    injectScript(closure);
 }
 
 HookManager.prototype.getUserScript = function(aScriptID) {
@@ -757,8 +834,15 @@ HookManager.prototype.getUserScriptSource = function(aScriptID) {
   return script.content;
 }
 
-// Make init available
+HookManager.prototype.addMenuItem = function(aCaption, aHandler) {
+  this.hud.addMenuItem(aCaption, aHandler);
+}
+
+// Make init and addMenuItem available
 var hm = new HookManager({debug: config.debug});
-aWin.HOOK_MANAGER = {init: hm.init.bind(hm)};
+aWin.HOOK_MANAGER = {
+  init: hm.init.bind(hm),
+  addMenuItem: hm.addMenuItem.bind(hm)
+};
 
 })(window);
