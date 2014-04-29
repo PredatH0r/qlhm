@@ -199,7 +199,7 @@ HudManager.prototype.onMenuItemClicked = function(aItem) {
     handler();
 }
 
-HudManager.prototype.rebuildNav = function () {
+HudManager.prototype.rebuildNav = function() {
   // method could have been called by the timer before the menu was created
   this.rebuildNavBarTimer = undefined;
   if (!nav.navbar["Hook"])
@@ -280,6 +280,7 @@ HudManager.prototype.scriptRowFromScript = function(aScript) {
   var id = aScript._meta.id.toString()
     , enabled = storage.scripts.enabled[id]
     ;
+
   return "<li id='userscript" + id + "' data-id='" + id + "'>"
        + "<input type='checkbox' class='userscript-state' " + (enabled ? "checked" : "") + ">"
        + " <label for='userscript" + id + "'><a href='javascript:void(0)'>" + e(aScript.headers.name[0]) + "</a></label>"
@@ -625,7 +626,7 @@ HookManager.prototype.init = function() {
   setTimeout(this.versionCheck.bind(this), 5E3);
 }
 
-HookManager.prototype.initScripts = function () {
+HookManager.prototype.initScripts = function() {
   $.ajax({url:config.EXTRAQL_URL + "scripts/extraQL.js", dataType:"script", timeout:1000})
     .done(this.initExtraQL.bind(this))
     .fail(function() { log("Using ^3QLHM^7 repository"); })
@@ -667,8 +668,7 @@ HookManager.prototype.loadScripts = function() {
   // get sorted list of enabled script IDs (allows rudimentary control over dependencies / execution order)
   var scriptIds = [];
   $.each(storage.scripts.enabled, function(scriptID, enabled) {
-    if (enabled)
-      scriptIds.push(scriptID);
+    if (enabled) scriptIds.push(scriptID);
   });
   scriptIds.sort();
 
@@ -735,20 +735,21 @@ HookManager.prototype.parseScriptHeader = function (aScript) {
   var start = script.indexOf("// ==UserScript==");
   var end = script.indexOf("// ==/UserScript==");
   var headerReset = {};
+
   if (start >= 0 && end >= 0) {
     var regex = new RegExp("^\\s*//\\s*@(\\w+)\\s+(.*?)\\s*$");
     script.substring(start, end).split("\n").forEach(function (line) {
       var match = line.match(regex);
-      if (!match)
-        return;
+      if (!match) return;
       var key = match[1];
       var value = match[2].trim();
       if (!(key in headers) || !headerReset[key]) {
         headers[key] = [value];
         headerReset[key] = true;
       }
-      else
+      else {
         headers[key].push(value);
+      }
     });
   }
 }
@@ -819,10 +820,11 @@ HookManager.prototype.injectUserScript = function(aScript) {
   // use $.getScript() when possible to preserve script file name in log and error messages
   if (aScript._meta.filename && aScript.headers["unwrap"] !== undefined && extraQL && extraQL.isServerRunning()) {
     var url = config.EXTRAQL_URL + "scripts/" + aScript._meta.filename;
-    $.getScript(url).fail(function () { injectScript(closure); });
+    $.getScript(url).fail(function() { injectScript(closure); });
   }
-  else
+  else {
     injectScript(closure);
+  }
 }
 
 HookManager.prototype.getUserScript = function(aScriptID) {
