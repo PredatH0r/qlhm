@@ -40,7 +40,7 @@ var USERSCRIPT_REPOSITORY_URL = config.BASE_URL + "qlhmUserscriptRepository.js";
 var webReloadRequired = false;
 
 // Holds the caption->handler pairs for script menu items added through HOOK_MANAGER.addMenuItem(...) 
-var scriptMenuItems = Array();
+var scriptMenuItems = {};
 
 // Local reference to jQuery (set during initialization)
 var $;
