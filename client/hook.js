@@ -627,7 +627,7 @@ HookManager.prototype.init = function() {
 HookManager.prototype.initScripts = function () {
   $.ajax({url:config.EXTRAQL_URL + "scripts/extraQL.js", dataType:"script", timeout:1000})
     .done(this.initExtraQL.bind(this))
-    .fail(function() { console.log("using ^3QLHM^7 repository"); })
+    .fail(function() { log("Using ^3QLHM^7 repository"); })
     .always(this.loadScripts.bind(this));
 }
 
