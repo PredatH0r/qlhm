@@ -5,6 +5,7 @@
 
 // called in ql.Init
 function main_hook() {
+  qz_instance.SendGameCommand("echo main_hook called");
   if (quakelive.mod_legals !== quakelive.activeModule) HOOK_MANAGER.init();
 }
 
